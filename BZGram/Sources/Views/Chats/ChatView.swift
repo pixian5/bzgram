@@ -97,8 +97,8 @@ private struct MessageBubbleView: View {
                         )
                         .foregroundStyle(message.isOutgoing ? .white : .primary)
 
-                    if showOriginal, let original = message.translatedText.map({ _ in message.originalText }) {
-                        Text(original)
+                    if showOriginal {
+                        Text(message.originalText)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 10)

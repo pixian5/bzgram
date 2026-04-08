@@ -15,7 +15,7 @@ public final class SettingsStore {
 
     public init(store: UserDefaults = .standard) {
         self.store = store
-        if let data = store.data(forKey: "bzgram.appSettings"),
+        if let data = store.data(forKey: key),
            let decoded = try? JSONDecoder().decode(AppSettings.self, from: data) {
             self.settings = decoded
         } else {

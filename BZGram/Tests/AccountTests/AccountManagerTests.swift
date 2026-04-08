@@ -95,6 +95,6 @@ final class AccountManagerTests: XCTestCase {
 
         let reloaded = AccountManager(store: store)
         XCTAssertEqual(reloaded.activeAccount?.id, b.id)
-        _ = a // suppress unused warning
+        XCTAssertNotEqual(reloaded.activeAccount?.id, a.id)
     }
 }
