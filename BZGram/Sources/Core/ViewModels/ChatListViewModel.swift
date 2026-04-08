@@ -1,0 +1,84 @@
+import Foundation
+#if canImport(Combine)
+import Combine
+
+/// View-model for the chat list of the active account.
+public final class ChatListViewModel: ObservableObject {
+
+    @Published public var chats: [Chat] = []
+    @Published public var isLoading: Bool = false
+
+    private let settingsStore: SettingsStore
+
+    public init(settingsStore: SettingsStore) {
+        self.settingsStore = settingsStore
+    }
+
+    public func setTranslationOverride(_ override: TranslationSettings?, for chat: Chat) {
+        guard let index = chats.firstIndex(where: { $0.id == chat.id }) else { return }
+        chats[index].translationOverride = override
+    }
+
+    public func clearTranslationOverride(for chat: Chat) {
+        setTranslationOverride(nil, for: chat)
+    }
+
+    public func effectiveSettings(for chat: Chat) -> TranslationSettings {
+        chat.effectiveTranslation(globalSettings: settingsStore.settings.globalTranslation)
+    }
+
+    public func loadChats(for account: Account) async {
+        await MainActor.run { isLoading = true }
+        let stub: [Chat] = [
+            Chat(id: 1, title: "Alice", type: .private, lastMessageSnippet: "Hey!", lastMessageDate: Date(), unreadCount: 2),
+            Chat(id: 2, title: "Work Group", type: .group, lastMessageSnippet: "Meeting at 3pm", lastMessageDate: Date(), unreadCount: 0),
+            Chat(id: 3, title: "News Channel", type: .channel, lastMessageSnippet: "Breaking news…", lastMessageDate: Date(), unreadCount: 10)
+        ]
+        await MainActor.run {
+            chats = stub
+            isLoading = false
+        }
+    }
+}
+#else
+/// View-model for the chat list of the active account.
+public final class ChatListViewModel {
+
+    public var chats: [Chat] = []
+    public var isLoading: Bool = false
+
+    private let settingsStore: SettingsStore
+
+    public init(settingsStore: SettingsStore) {
+        self.settingsStore = settingsStore
+    }
+
+    /// Update the per-conversation translation override.
+    public func setTranslationOverride(_ override: TranslationSettings?, for chat: Chat) {
+        guard let index = chats.firstIndex(where: { $0.id == chat.id }) else { return }
+        chats[index].translationOverride = override
+    }
+
+    /// Clear the per-conversation override so the chat falls back to the global setting.
+    public func clearTranslationOverride(for chat: Chat) {
+        setTranslationOverride(nil, for: chat)
+    }
+
+    /// Returns the effective `TranslationSettings` for `chat`.
+    public func effectiveSettings(for chat: Chat) -> TranslationSettings {
+        chat.effectiveTranslation(globalSettings: settingsStore.settings.globalTranslation)
+    }
+
+    /// Load chats for the given account (stub implementation).
+    public func loadChats(for account: Account) async {
+        isLoading = true
+        let stub: [Chat] = [
+            Chat(id: 1, title: "Alice", type: .private, lastMessageSnippet: "Hey!", lastMessageDate: Date(), unreadCount: 2),
+            Chat(id: 2, title: "Work Group", type: .group, lastMessageSnippet: "Meeting at 3pm", lastMessageDate: Date(), unreadCount: 0),
+            Chat(id: 3, title: "News Channel", type: .channel, lastMessageSnippet: "Breaking news…", lastMessageDate: Date(), unreadCount: 10)
+        ]
+        chats = stub
+        isLoading = false
+    }
+}
+#endif
