@@ -1,0 +1,17 @@
+# Swift build artifacts
+.build/
+*.o
+*.d
+*.dia
+*.swp
+
+# Xcode
+*.xcworkspace/
+xcuserdata/
+DerivedData/
+*.xccheckout
+*.moved-aside
+*.pbxuser
+
+# macOS
+.DS_Store
