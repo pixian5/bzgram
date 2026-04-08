@@ -1,0 +1,42 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build project
+        run: swift build -c release
+
+      - name: Package build output
+        run: |
+          VERSION="${{ github.run_number }}"
+          mkdir -p dist
+          tar -czf "dist/BZGram-build-v${VERSION}.tar.gz" -C .build/release .
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ github.run_number }}"
+          TAG="v${VERSION}"
+          ASSET="dist/BZGram-build-v${VERSION}.tar.gz"
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$ASSET" --clobber
+          else
+            gh release create "$TAG" "$ASSET" \
+              --title "Release ${TAG}" \
+              --notes "Automated build for commit ${{ github.sha }}"
+          fi
