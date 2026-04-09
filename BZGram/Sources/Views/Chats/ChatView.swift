@@ -1,4 +1,5 @@
 import SwiftUI
+import BZGramCore
 
 /// The conversation view for a single chat.
 public struct ChatView: View {

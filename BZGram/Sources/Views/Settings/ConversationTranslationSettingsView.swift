@@ -1,4 +1,5 @@
 import SwiftUI
+import BZGramCore
 
 /// Language picker + translation toggle for a single conversation.
 /// Changes here override the global translation setting for this chat only.

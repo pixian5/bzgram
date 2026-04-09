@@ -1,4 +1,5 @@
 import SwiftUI
+import BZGramCore
 
 /// Global app settings: auto-translation defaults that apply to all conversations
 /// unless a per-conversation override is in place.

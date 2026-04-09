@@ -1,29 +1,49 @@
-name: Build and Release
+name: Build iOS Project Package
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  build-and-release:
-    runs-on: ubuntu-latest
+  build-ios-project:
+    runs-on: macos-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build project
-        run: swift build -c release
+      - name: Install XcodeGen
+        run: brew install xcodegen
 
-      - name: Package build output
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build iOS app for simulator
+        run: |
+          xcodebuild \
+            -project BZGram.xcodeproj \
+            -scheme BZGram \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package Xcode project for local IPA build
         run: |
           VERSION="${{ github.run_number }}"
           mkdir -p dist
-          tar -czf "dist/BZGram-build-v${VERSION}.tar.gz" -C .build/release .
+          zip -r "dist/BZGram-iOS-project-v${VERSION}.zip" \
+            BZGram.xcodeproj \
+            BZGram \
+            Package.swift \
+            README.md \
+            project.yml
 
       - name: Publish release
         env:
@@ -31,12 +51,12 @@ jobs:
         run: |
           VERSION="${{ github.run_number }}"
           TAG="v${VERSION}"
-          ASSET="dist/BZGram-build-v${VERSION}.tar.gz"
+          ASSET="dist/BZGram-iOS-project-v${VERSION}.zip"
 
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$ASSET" --clobber
           else
             gh release create "$TAG" "$ASSET" \
-              --title "Release ${TAG}" \
-              --notes "Automated build for commit ${{ github.sha }}"
+              --title "iOS Project ${TAG}" \
+              --notes "Automated Xcode project package for local IPA export from commit ${{ github.sha }}"
           fi

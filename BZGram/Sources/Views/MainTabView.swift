@@ -1,4 +1,5 @@
 import SwiftUI
+import BZGramCore
 
 /// Main tab bar shown after a successful login.
 public struct MainTabView: View {

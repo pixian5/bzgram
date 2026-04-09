@@ -1,4 +1,5 @@
 import SwiftUI
+import BZGramCore
 
 /// BZGram application entry point.
 @main

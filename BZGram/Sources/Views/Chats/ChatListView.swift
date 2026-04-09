@@ -1,4 +1,5 @@
 import SwiftUI
+import BZGramCore
 
 /// Lists all chats for the active account.
 public struct ChatListView: View {
@@ -18,7 +19,7 @@ public struct ChatListView: View {
                     ProgressView("Loading chats…")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if viewModel.chats.isEmpty {
-                    ContentUnavailableView("No Chats", systemImage: "message", description: Text("Your conversations will appear here."))
+                    emptyState
                 } else {
                     chatList
                 }
@@ -44,6 +45,31 @@ public struct ChatListView: View {
                     effectiveSettings: viewModel.effectiveSettings(for: chat)
                 )
             }
+        }
+    }
+
+    @ViewBuilder
+    private var emptyState: some View {
+        if #available(iOS 17.0, *) {
+            ContentUnavailableView(
+                "No Chats",
+                systemImage: "message",
+                description: Text("Your conversations will appear here.")
+            )
+        } else {
+            VStack(spacing: 12) {
+                Image(systemName: "message")
+                    .font(.system(size: 40))
+                    .foregroundStyle(.secondary)
+                Text("No Chats")
+                    .font(.headline)
+                Text("Your conversations will appear here.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .multilineTextAlignment(.center)
+            .padding()
         }
     }
 }

@@ -1,4 +1,5 @@
 import SwiftUI
+import BZGramCore
 
 /// Root application view.
 /// Shows the chat list when an account is active, or the account picker when none is.

@@ -4,47 +4,71 @@ A third-party Telegram client for iOS with unlimited account support and built-i
 
 ## Features
 
-- 📱 **iOS Native** – Built with Swift and SwiftUI for a native iOS experience
-- 👥 **Unlimited Accounts** – Log in with as many Telegram accounts as you need; switch between them instantly
-- 🌐 **Auto-Translation** – Enable automatic translation for all conversations in one tap
-- 💬 **Per-Conversation Translation** – Override the global translation setting for any individual chat, choosing the target language and whether to show the original text alongside the translation
-- 🔒 **Privacy Focused** – Your data stays on your device; translation calls are made only when needed
+- iOS native UI built with SwiftUI
+- Unlimited Telegram account management
+- Global auto-translation settings
+- Per-conversation translation overrides
+- Core logic separated into `BZGramCore` for easier testing
 
 ## Requirements
 
+- macOS with Xcode 15 or later
 - iOS 16.0+
-- Xcode 15+
 - Swift 5.9+
+- `xcodegen` if you want to generate `BZGram.xcodeproj` locally from `project.yml`
+
+## Current Build Flow
+
+This repository now supports two parallel ways of preparing an iOS build:
+
+1. `Package.swift`
+   Used for the pure Swift core library and tests.
+2. `project.yml`
+   Used by XcodeGen to generate `BZGram.xcodeproj`, which opens directly in Xcode as an iOS app project.
+
+The GitHub Actions workflow runs on macOS and does the following:
+
+1. Installs XcodeGen
+2. Generates `BZGram.xcodeproj`
+3. Builds the `BZGram` iOS app target for `iphonesimulator`
+4. Uploads a zip containing the generated Xcode project and source code
+
+This does not produce a signed `.ipa` in CI, because `.ipa` export requires Apple signing assets. It does produce a package that is intentionally close to the final IPA step: download the zip, open `BZGram.xcodeproj` in Xcode, configure signing, then Archive and export an IPA locally.
+
+## Local Usage
+
+### Option 1: Generate the Xcode project yourself
+
+```bash
+brew install xcodegen
+xcodegen generate
+open BZGram.xcodeproj
+```
+
+### Option 2: Use the workflow artifact or release zip
+
+1. Download the generated `BZGram-iOS-project-v*.zip` from GitHub Actions or Releases.
+2. Unzip it locally.
+3. Open `BZGram.xcodeproj` in Xcode.
+4. Set your Team, Bundle Identifier, and signing profile.
+5. Build, Archive, and export the IPA from Xcode.
 
 ## Project Structure
 
-```
+```text
 BZGram/
-├── Sources/
-│   ├── App/                   # App entry point and root navigation
-│   ├── Models/                # Data models (Account, Chat, Message, TranslationSettings)
-│   ├── ViewModels/            # ObservableObject view-models
-│   ├── Views/
-│   │   ├── Accounts/          # Account list and login/logout flows
-│   │   ├── Chats/             # Chat list and message views
-│   │   └── Settings/          # Global settings (language & translation)
-│   ├── Services/              # AccountManager, TranslationService
-│   └── Utilities/             # Extensions and helpers
-├── Resources/                 # Assets, localisation strings
-└── Tests/
-    ├── AccountTests/
-    └── TranslationTests/
+  Sources/
+    App/      iOS app entry point
+    Core/     Models, services, and view-models
+    Views/    SwiftUI screens
+  Tests/      Unit tests for the core module
 ```
 
-## Getting Started
+## Notes
 
-1. Clone this repository.
-2. Open `BZGram.xcodeproj` (or the Swift Package via `Package.swift`) in Xcode.
-3. Select an iOS simulator or device and press **Run**.
-
-> **Note:** This project uses the [Telegram Bot API](https://core.telegram.org/api) / TDLib for backend communication.
-> You must supply your own `api_id` and `api_hash` from [https://my.telegram.org](https://my.telegram.org)
-> and place them in `BZGram/Resources/TelegramConfig.plist`.
+- If normal local running fails because the Xcode project is missing, generate it with `xcodegen generate`.
+- CI intentionally builds for `iphonesimulator` without signing, so that validation works without Apple certificates.
+- To export a real `.ipa`, continue in Xcode on macOS with your own signing configuration.
 
 ## License
 

@@ -1,4 +1,5 @@
 import SwiftUI
+import BZGramCore
 
 /// Displays all accounts and lets the user add or switch between them.
 /// There is no cap on how many accounts can be added.
