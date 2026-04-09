@@ -7,6 +7,7 @@ public struct ChatListView: View {
     @ObservedObject var viewModel: ChatListViewModel
     @EnvironmentObject private var accountManager: AccountManager
     @EnvironmentObject private var settingsStore: SettingsStore
+    @EnvironmentObject private var sessionStore: TelegramSessionStore
 
     public init(viewModel: ChatListViewModel) {
         self.viewModel = viewModel
@@ -29,6 +30,11 @@ public struct ChatListView: View {
                 guard let account = accountManager.activeAccount else { return }
                 await viewModel.loadChats(for: account)
             }
+            .refreshable {
+                guard accountManager.activeAccount != nil else { return }
+                await sessionStore.refreshChats()
+                viewModel.chats = sessionStore.chats
+            }
         }
     }
 
@@ -36,7 +42,7 @@ public struct ChatListView: View {
         List(viewModel.chats) { chat in
             NavigationLink {
                 ChatView(
-                    viewModel: ChatViewModel(chat: chat, settingsStore: settingsStore),
+                    viewModel: ChatViewModel(chat: chat, settingsStore: settingsStore, sessionStore: sessionStore),
                     chatListViewModel: viewModel
                 )
             } label: {

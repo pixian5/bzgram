@@ -19,7 +19,10 @@ public struct ChatView: View {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                messageList
+                VStack(spacing: 0) {
+                    messageList
+                    composer
+                }
             }
         }
         .navigationTitle(viewModel.chat.title)
@@ -64,6 +67,21 @@ public struct ChatView: View {
                 }
             }
         }
+    }
+
+    private var composer: some View {
+        HStack(spacing: 12) {
+            TextField("Message", text: $viewModel.draftMessage, axis: .vertical)
+                .textFieldStyle(.roundedBorder)
+                .lineLimit(1...4)
+            Button("Send") {
+                Task { await viewModel.sendCurrentDraft() }
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(viewModel.draftMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        }
+        .padding()
+        .background(.thinMaterial)
     }
 }
 

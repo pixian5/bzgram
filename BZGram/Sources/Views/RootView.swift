@@ -6,17 +6,15 @@ import BZGramCore
 public struct RootView: View {
 
     @EnvironmentObject private var accountManager: AccountManager
-    @EnvironmentObject private var settingsStore: SettingsStore
+    @EnvironmentObject private var sessionStore: TelegramSessionStore
 
     public init() {}
 
     public var body: some View {
-        if accountManager.activeAccount != nil {
+        if sessionStore.isAuthorized || accountManager.activeAccount != nil {
             MainTabView()
         } else {
-            AccountListView(
-                viewModel: AccountListViewModel(manager: accountManager)
-            )
+            AuthenticationView()
         }
     }
 }
