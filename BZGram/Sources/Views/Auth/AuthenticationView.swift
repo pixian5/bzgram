@@ -37,7 +37,7 @@ public struct AuthenticationView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Telegram Client")
                 .font(.largeTitle.bold())
-            Text("This build uses a client abstraction that is ready to swap from the mock backend to TDLib. The default demo code is `12345`.")
+            Text("没有配置 Telegram API 参数时会自动使用演示后端，默认验证码是 `12345`。配置完成后会自动切换到真实 TDLib 登录。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -61,9 +61,9 @@ public struct AuthenticationView: View {
 
     private var phoneForm: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Enter your Telegram phone number to start authorization.")
+            Text("输入 Telegram 手机号开始登录，不需要手动输入加号。")
                 .foregroundStyle(.secondary)
-            TextField("+1 555 123 4567", text: $phoneNumber)
+            TextField("86 138 0013 8000", text: $phoneNumber)
                 .textContentType(.telephoneNumber)
                 .keyboardType(.phonePad)
                 .textFieldStyle(.roundedBorder)

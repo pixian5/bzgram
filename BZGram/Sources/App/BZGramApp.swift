@@ -13,7 +13,12 @@ public struct BZGramApp: App {
         let accountManager = AccountManager()
         _accountManager = StateObject(wrappedValue: accountManager)
         _settingsStore = StateObject(wrappedValue: SettingsStore())
-        _sessionStore = StateObject(wrappedValue: TelegramSessionStore(accountManager: accountManager))
+        _sessionStore = StateObject(
+            wrappedValue: TelegramSessionStore(
+                client: TelegramClientFactory.makeDefaultClient(),
+                accountManager: accountManager
+            )
+        )
     }
 
     public var body: some Scene {

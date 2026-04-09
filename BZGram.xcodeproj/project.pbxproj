@@ -20,16 +20,20 @@
 		601FA70584E0CBE0516269F8 /* ChatListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C23BE3E9C4810AAFF71011 /* ChatListView.swift */; };
 		7DC6CA1432D185B5742FC823 /* ConversationTranslationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D130D09C9D0808A1A215D9DC /* ConversationTranslationSettingsView.swift */; };
 		7F657FB885BD4BD676A01446 /* BZGramCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 44ABF8E6A56C108423665022 /* BZGramCore.framework */; };
+		841ADC9F193666B513FAB5DB /* TelegramClientFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBE289304AD7A7CDF56C9F31 /* TelegramClientFactory.swift */; };
+		8712F0FDEF15AA17C03A24F4 /* TDLibKit in Frameworks */ = {isa = PBXBuildFile; productRef = 37C1071E3F203F00C57B1E7C /* TDLibKit */; };
 		8DFB9C9EAF799130085CD347 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0441B82DDFC481B14E3975B3 /* AppSettings.swift */; };
 		91E154C8270B657A8D1FC3DE /* BZGramApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 124B669EC0519E7BAEC468D1 /* BZGramApp.swift */; };
 		9499C519D150F19006FEF269 /* AccountListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D0D8A8BE3081D0BDFAEB570 /* AccountListView.swift */; };
 		9ABE07789617755F756A624E /* TelegramClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32A6C7C8F1F786438F90A8CD /* TelegramClient.swift */; };
 		9E4915EEA2E68F222E872247 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2C4AC71001B64829ADD770C /* Message.swift */; };
 		A15D0957175AF1D1FEFA3E3E /* ChatListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC99167788628B78E35E1709 /* ChatListViewModel.swift */; };
+		A185CD944C060A6A73B544AC /* TelegramAPIConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 105B81349DA6D5B9F451D949 /* TelegramAPIConfiguration.swift */; };
 		A2B4A875332F444614E3AEE8 /* GlobalSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DAAA48D16DF7830160CFAF5 /* GlobalSettingsView.swift */; };
 		A2F5264244776B7D14B7008C /* TranslationSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A6F8EAF3DB6E0D394F983A /* TranslationSettings.swift */; };
 		A5DBD586DE4BB6F615F8BE80 /* BZGramCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 44ABF8E6A56C108423665022 /* BZGramCore.framework */; };
 		AC6DA49C4A37D4D45D427DFE /* AuthenticationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05345EC5E0B68FF5824AA87A /* AuthenticationView.swift */; };
+		B0C58A33B62BD7F4D4DBB040 /* TDLibTelegramClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = AADD6413673900195865157F /* TDLibTelegramClient.swift */; };
 		B264CCF49C9804754A5E5D2F /* TranslationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5721330ACAB145A36BA7662B /* TranslationService.swift */; };
 		B7736196E9A01CEE1934B479 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1408439CC14C2F901EC9C2B /* MainTabView.swift */; };
 		BD4D29DD1F67E31DB7063900 /* TranslationSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88AB8BC7E72EFF56B3637086 /* TranslationSettingsTests.swift */; };
@@ -86,6 +90,7 @@
 		0441B82DDFC481B14E3975B3 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		05345EC5E0B68FF5824AA87A /* AuthenticationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationView.swift; sourceTree = "<group>"; };
 		0C632AD7FFD0A44799F1C1B9 /* AccountManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountManager.swift; sourceTree = "<group>"; };
+		105B81349DA6D5B9F451D949 /* TelegramAPIConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramAPIConfiguration.swift; sourceTree = "<group>"; };
 		124B669EC0519E7BAEC468D1 /* BZGramApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BZGramApp.swift; sourceTree = "<group>"; };
 		1766DB3178133FED4E3CFF65 /* AccountListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountListViewModel.swift; sourceTree = "<group>"; };
 		1D76342683DBDDDF1E590862 /* Account.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Account.swift; sourceTree = "<group>"; };
@@ -104,6 +109,7 @@
 		9E0087D490B0FC73F9EAC21D /* BZGramTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = BZGramTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A082796E780644F9EE141677 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		A1E0841CA358C457DF05DC0A /* ChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatViewModel.swift; sourceTree = "<group>"; };
+		AADD6413673900195865157F /* TDLibTelegramClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TDLibTelegramClient.swift; sourceTree = "<group>"; };
 		C1856257392C50FCC3F20D79 /* TelegramSessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramSessionStore.swift; sourceTree = "<group>"; };
 		D130D09C9D0808A1A215D9DC /* ConversationTranslationSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationTranslationSettingsView.swift; sourceTree = "<group>"; };
 		D2C4AC71001B64829ADD770C /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
@@ -113,6 +119,7 @@
 		ECEC2084BA61575C555A4020 /* BZGram.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BZGram.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F1408439CC14C2F901EC9C2B /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		F7BA5180717D7FCE0182C3B2 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
+		FBE289304AD7A7CDF56C9F31 /* TelegramClientFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramClientFactory.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -121,6 +128,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				A5DBD586DE4BB6F615F8BE80 /* BZGramCore.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C6969B16243868995309F27C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8712F0FDEF15AA17C03A24F4 /* TDLibKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -209,7 +224,10 @@
 				0C632AD7FFD0A44799F1C1B9 /* AccountManager.swift */,
 				E3CDCDDE752067BACD92BA58 /* MockTelegramClient.swift */,
 				F7BA5180717D7FCE0182C3B2 /* SettingsStore.swift */,
+				AADD6413673900195865157F /* TDLibTelegramClient.swift */,
+				105B81349DA6D5B9F451D949 /* TelegramAPIConfiguration.swift */,
 				32A6C7C8F1F786438F90A8CD /* TelegramClient.swift */,
+				FBE289304AD7A7CDF56C9F31 /* TelegramClientFactory.swift */,
 				C1856257392C50FCC3F20D79 /* TelegramSessionStore.swift */,
 				5721330ACAB145A36BA7662B /* TranslationService.swift */,
 			);
@@ -327,6 +345,7 @@
 			buildConfigurationList = 603915242B738016858DA22D /* Build configuration list for PBXNativeTarget "BZGramCore" */;
 			buildPhases = (
 				4D90BBDE2EAC37EF0D1CBCD6 /* Sources */,
+				C6969B16243868995309F27C /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -334,6 +353,7 @@
 			);
 			name = BZGramCore;
 			packageProductDependencies = (
+				37C1071E3F203F00C57B1E7C /* TDLibKit */,
 			);
 			productName = BZGramCore;
 			productReference = 44ABF8E6A56C108423665022 /* BZGramCore.framework */;
@@ -391,6 +411,9 @@
 			);
 			mainGroup = 2896DAD8CB488249EEE0F38A;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				CC215FF1C0EA050B699C9AF4 /* XCRemoteSwiftPackageReference "TDLibKit" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = AB379FC02242471B6953D595 /* Products */;
 			projectDirPath = "";
@@ -427,8 +450,11 @@
 				9E4915EEA2E68F222E872247 /* Message.swift in Sources */,
 				3D821A8A7D8228CC21BB8C44 /* MockTelegramClient.swift in Sources */,
 				4329598C27083E6D96EB1B43 /* SettingsStore.swift in Sources */,
+				B0C58A33B62BD7F4D4DBB040 /* TDLibTelegramClient.swift in Sources */,
+				A185CD944C060A6A73B544AC /* TelegramAPIConfiguration.swift in Sources */,
 				51FC2559014268372932C1E8 /* TelegramAuthorizationState.swift in Sources */,
 				9ABE07789617755F756A624E /* TelegramClient.swift in Sources */,
+				841ADC9F193666B513FAB5DB /* TelegramClientFactory.swift in Sources */,
 				13C252B37B0E31E8404D0A01 /* TelegramSessionStore.swift in Sources */,
 				D316FDBAE45B59AA83C787C2 /* TelegramUser.swift in Sources */,
 				B264CCF49C9804754A5E5D2F /* TranslationService.swift in Sources */,
@@ -565,6 +591,9 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_KEY_BZGRAM_TELEGRAM_API_HASH = "";
+				INFOPLIST_KEY_BZGRAM_TELEGRAM_API_ID = "";
+				INFOPLIST_KEY_BZGRAM_TELEGRAM_USE_TEST_DC = NO;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -719,6 +748,9 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_KEY_BZGRAM_TELEGRAM_API_HASH = "";
+				INFOPLIST_KEY_BZGRAM_TELEGRAM_API_ID = "";
+				INFOPLIST_KEY_BZGRAM_TELEGRAM_USE_TEST_DC = NO;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -773,6 +805,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		CC215FF1C0EA050B699C9AF4 /* XCRemoteSwiftPackageReference "TDLibKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Swiftgram/TDLibKit";
+			requirement = {
+				kind = exactVersion;
+				version = "1.5.2-tdlib-1.8.63-8ff05a0e";
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		37C1071E3F203F00C57B1E7C /* TDLibKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CC215FF1C0EA050B699C9AF4 /* XCRemoteSwiftPackageReference "TDLibKit" */;
+			productName = TDLibKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = B737D51CC2B340A227159BAB /* Project object */;
 }

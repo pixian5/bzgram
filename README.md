@@ -45,6 +45,22 @@ xcodegen generate
 open BZGram.xcodeproj
 ```
 
+### Real Telegram login configuration
+
+The app now supports two startup modes:
+
+- If `BZGRAM_TELEGRAM_API_ID` and `BZGRAM_TELEGRAM_API_HASH` are empty, it falls back to the built-in mock client and still runs normally.
+- If you fill those two Info.plist keys in the `BZGram` target build settings, the app switches to a real TDLib-backed Telegram client.
+
+Recommended local setup in Xcode:
+
+1. Open the `BZGram` target.
+2. Search build settings for `BZGRAM_TELEGRAM_API_ID` and `BZGRAM_TELEGRAM_API_HASH`.
+3. Fill your values from `https://my.telegram.org`.
+4. Optional: set `BZGRAM_TELEGRAM_USE_TEST_DC=YES` only if you intentionally want the Telegram test environment.
+
+The phone number field accepts plain digits and will automatically prepend `+` before sending to TDLib.
+
 ### Option 2: Use the workflow artifact or release zip
 
 1. Download the generated `BZGram-iOS-project-v*.zip` from GitHub Actions or Releases.
