@@ -1,12 +1,13 @@
 import SwiftUI
 import BZGramCore
 
-/// The conversation view for a single chat.
+/// 对话详情视图（消息收发 + 翻译 + 编辑 + 长按菜单）
 public struct ChatView: View {
 
     @ObservedObject var viewModel: ChatViewModel
     @ObservedObject var chatListViewModel: ChatListViewModel
     @State private var showTranslationSettings = false
+    @Environment(\.colorScheme) private var colorScheme
 
     public init(viewModel: ChatViewModel, chatListViewModel: ChatListViewModel) {
         self.viewModel = viewModel
@@ -14,27 +15,34 @@ public struct ChatView: View {
     }
 
     public var body: some View {
-        Group {
-            if viewModel.isLoading {
-                ProgressView()
+        VStack(spacing: 0) {
+            if viewModel.isLoading && viewModel.messages.isEmpty {
+                ProgressView("加载消息中…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                VStack(spacing: 0) {
-                    messageList
-                    composer
-                }
+                messageList
+                editingBanner
+                replyBanner
+                composer
             }
         }
         .navigationTitle(viewModel.chat.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button {
-                    showTranslationSettings = true
-                } label: {
-                    Image(systemName: viewModel.effectiveSettings.autoTranslateEnabled
-                          ? "globe.badge.chevron.backward"
-                          : "globe")
+                HStack(spacing: 12) {
+                    Button {
+                        withAnimation { viewModel.isSearching.toggle() }
+                    } label: {
+                        Image(systemName: "magnifyingglass")
+                    }
+                    Button {
+                        showTranslationSettings = true
+                    } label: {
+                        Image(systemName: viewModel.effectiveSettings.autoTranslateEnabled
+                              ? "globe.badge.chevron.backward"
+                              : "globe")
+                    }
                 }
             }
         }
@@ -47,49 +55,151 @@ public struct ChatView: View {
         .task { await viewModel.loadMessages() }
     }
 
+    // MARK: - 消息列表
+
     private var messageList: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(spacing: 8) {
-                    ForEach(viewModel.messages) { message in
+                // 搜索栏
+                if viewModel.isSearching {
+                    TextField("搜索消息…", text: $viewModel.searchQuery)
+                        .textFieldStyle(.roundedBorder)
+                        .padding()
+                }
+
+                LazyVStack(spacing: 6) {
+                    let displayMessages = viewModel.isSearching ? viewModel.filteredMessages : viewModel.messages
+                    ForEach(displayMessages) { message in
                         MessageBubbleView(
                             message: message,
-                            settings: viewModel.effectiveSettings
+                            settings: viewModel.effectiveSettings,
+                            onEdit: { viewModel.startEditing(message) },
+                            onDelete: { Task { await viewModel.deleteMessage(message) } },
+                            onReply: { viewModel.setReply(to: message) }
                         )
                         .id(message.id)
                     }
                 }
-                .padding()
+                .padding(.horizontal)
+                .padding(.top, 8)
             }
             .onAppear {
                 if let last = viewModel.messages.last {
                     proxy.scrollTo(last.id, anchor: .bottom)
                 }
             }
+            .onChange(of: viewModel.messages.count) { _ in
+                if let last = viewModel.messages.last {
+                    withAnimation {
+                        proxy.scrollTo(last.id, anchor: .bottom)
+                    }
+                }
+            }
         }
     }
 
-    private var composer: some View {
-        HStack(spacing: 12) {
-            TextField("Message", text: $viewModel.draftMessage, axis: .vertical)
-                .textFieldStyle(.roundedBorder)
-                .lineLimit(1...4)
-            Button("Send") {
-                Task { await viewModel.sendCurrentDraft() }
+    // MARK: - 编辑中提示
+
+    @ViewBuilder
+    private var editingBanner: some View {
+        if let editing = viewModel.editingMessage {
+            HStack {
+                Image(systemName: "pencil.circle.fill")
+                    .foregroundStyle(.orange)
+                VStack(alignment: .leading) {
+                    Text("正在编辑")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.orange)
+                    Text(editing.originalText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                Spacer()
+                Button { viewModel.cancelEditing() } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
             }
-            .buttonStyle(.borderedProminent)
-            .disabled(viewModel.draftMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+            .background(.ultraThinMaterial)
         }
-        .padding()
+    }
+
+    // MARK: - 回复中提示
+
+    @ViewBuilder
+    private var replyBanner: some View {
+        if let reply = viewModel.replyToMessage {
+            HStack {
+                Rectangle()
+                    .fill(.accentColor)
+                    .frame(width: 3)
+                VStack(alignment: .leading) {
+                    Text(reply.senderName)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.accentColor)
+                    Text(reply.originalText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                Spacer()
+                Button { viewModel.cancelReply() } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+            .background(.ultraThinMaterial)
+        }
+    }
+
+    // MARK: - 消息输入框
+
+    private var composer: some View {
+        HStack(spacing: 10) {
+            TextField(viewModel.isEditing ? "编辑消息…" : "发送消息…",
+                      text: $viewModel.draftMessage,
+                      axis: .vertical)
+                .textFieldStyle(.roundedBorder)
+                .lineLimit(1...5)
+
+            if viewModel.isEditing {
+                Button {
+                    Task { await viewModel.submitEdit() }
+                } label: {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.orange)
+                }
+            } else {
+                Button {
+                    Task { await viewModel.sendCurrentDraft() }
+                } label: {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.accentColor)
+                }
+                .disabled(viewModel.draftMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 10)
         .background(.thinMaterial)
     }
 }
 
-// MARK: - Message bubble
+// MARK: - 消息气泡
 
 private struct MessageBubbleView: View {
     let message: Message
     let settings: TranslationSettings
+    var onEdit: () -> Void
+    var onDelete: () -> Void
+    var onReply: () -> Void
 
     private var displayText: String { message.displayText(settings: settings) }
     private var showOriginal: Bool {
@@ -98,38 +208,106 @@ private struct MessageBubbleView: View {
 
     var body: some View {
         HStack {
-            if message.isOutgoing { Spacer(minLength: 60) }
+            if message.isOutgoing { Spacer(minLength: 50) }
 
-            VStack(alignment: message.isOutgoing ? .trailing : .leading, spacing: 4) {
+            VStack(alignment: message.isOutgoing ? .trailing : .leading, spacing: 3) {
                 if !message.isOutgoing {
                     Text(message.senderName)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.accentColor)
                 }
 
+                // 消息内容卡片
                 VStack(alignment: .leading, spacing: 4) {
+                    // 消息类型图标
+                    if message.contentType != .text {
+                        HStack(spacing: 4) {
+                            Image(systemName: contentTypeIcon)
+                                .font(.caption)
+                            Text(contentTypeLabel)
+                                .font(.caption)
+                        }
+                        .foregroundStyle(.secondary)
+                    }
+
                     Text(displayText)
-                        .padding(10)
-                        .background(
-                            message.isOutgoing ? Color.accentColor : Color(.systemGray5),
-                            in: RoundedRectangle(cornerRadius: 16)
-                        )
-                        .foregroundStyle(message.isOutgoing ? .white : .primary)
+                        .font(.body)
 
                     if showOriginal {
+                        Divider()
                         Text(message.originalText)
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                            .padding(.horizontal, 10)
+                    }
+                }
+                .padding(10)
+                .background(
+                    message.isOutgoing
+                        ? Color.accentColor
+                        : Color(.systemGray5),
+                    in: RoundedRectangle(cornerRadius: 16)
+                )
+                .foregroundStyle(message.isOutgoing ? .white : .primary)
+                .contextMenu {
+                    Button { UIPasteboard.general.string = displayText } label: {
+                        Label("复制", systemImage: "doc.on.doc")
+                    }
+                    Button(action: onReply) {
+                        Label("回复", systemImage: "arrowshape.turn.up.left")
+                    }
+                    if message.canBeEdited {
+                        Button(action: onEdit) {
+                            Label("编辑", systemImage: "pencil")
+                        }
+                    }
+                    if message.canBeDeleted {
+                        Button(role: .destructive, action: onDelete) {
+                            Label("撤回", systemImage: "trash")
+                        }
                     }
                 }
 
-                Text(message.date, style: .time)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 4) {
+                    Text(message.formattedTime)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    if message.isEdited {
+                        Text("已编辑")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
 
-            if !message.isOutgoing { Spacer(minLength: 60) }
+            if !message.isOutgoing { Spacer(minLength: 50) }
+        }
+    }
+
+    private var contentTypeIcon: String {
+        switch message.contentType {
+        case .photo: return "photo"
+        case .video: return "play.rectangle"
+        case .document: return "doc"
+        case .sticker: return "face.smiling"
+        case .voice: return "waveform"
+        case .animation: return "gift"
+        case .location: return "location"
+        case .contact: return "person.crop.circle"
+        default: return "doc"
+        }
+    }
+
+    private var contentTypeLabel: String {
+        switch message.contentType {
+        case .photo: return "图片"
+        case .video: return "视频"
+        case .document: return "文件"
+        case .sticker: return "贴纸"
+        case .voice: return "语音"
+        case .animation: return "动图"
+        case .location: return "位置"
+        case .contact: return "联系人"
+        default: return ""
         }
     }
 }

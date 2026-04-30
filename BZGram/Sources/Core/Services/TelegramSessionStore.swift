@@ -3,7 +3,8 @@ import Foundation
 import Combine
 #endif
 
-/// Central app session state for Telegram authorization and chat data.
+/// 中心化的 Telegram 会话状态管理器。
+/// 管理认证状态、聊天数据、消息数据及所有通信操作。
 @MainActor
 public final class TelegramSessionStore: ObservableObject {
 
@@ -13,6 +14,8 @@ public final class TelegramSessionStore: ObservableObject {
     @Published public private(set) var messagesByChatID: [Int64: [Message]] = [:]
     @Published public private(set) var isBusy: Bool = false
     @Published public var lastErrorMessage: String?
+    /// Toast 提示消息
+    @Published public var toastMessage: String?
 
     private let client: TelegramClient
     private let accountManager: AccountManager
@@ -28,6 +31,8 @@ public final class TelegramSessionStore: ObservableObject {
     public var isAuthorized: Bool {
         authorizationState == .ready
     }
+
+    // MARK: - 认证流程
 
     public func start() async {
         authorizationState = await client.authorizationState()
@@ -75,6 +80,8 @@ public final class TelegramSessionStore: ObservableObject {
         isBusy = false
     }
 
+    // MARK: - 聊天操作
+
     public func refreshChats() async {
         await perform { [self] in
             self.chats = try await self.client.fetchChats()
@@ -101,6 +108,74 @@ public final class TelegramSessionStore: ObservableObject {
         messagesByChatID[chatID] ?? []
     }
 
+    // MARK: - 增强操作
+
+    /// 编辑消息
+    public func editMessage(messageID: Int64, in chatID: Int64, newText: String) async {
+        await perform { [self] in
+            try await self.client.editMessage(messageID: messageID, in: chatID, newText: newText)
+            self.messagesByChatID[chatID] = try await self.client.fetchMessages(in: chatID)
+            self.showToast("消息已编辑")
+        }
+    }
+
+    /// 删除/撤回消息
+    public func deleteMessage(messageID: Int64, in chatID: Int64) async {
+        await perform { [self] in
+            try await self.client.deleteMessages(messageIDs: [messageID], in: chatID)
+            self.messagesByChatID[chatID]?.removeAll { $0.id == messageID }
+            self.showToast("消息已撤回")
+        }
+    }
+
+    /// 标记会话已读
+    public func markAsRead(chatID: Int64) async {
+        await perform { [self] in
+            try await self.client.markChatAsRead(chatID: chatID)
+            if let index = self.chats.firstIndex(where: { $0.id == chatID }) {
+                self.chats[index].unreadCount = 0
+            }
+        }
+    }
+
+    /// 置顶/取消置顶会话
+    public func togglePin(for chatID: Int64) async {
+        if let index = chats.firstIndex(where: { $0.id == chatID }) {
+            chats[index].isPinned.toggle()
+            sortChats()
+            showToast(chats[index].isPinned ? "已置顶" : "已取消置顶")
+        }
+    }
+
+    /// 静音/取消静音会话
+    public func toggleMute(for chatID: Int64) async {
+        if let index = chats.firstIndex(where: { $0.id == chatID }) {
+            chats[index].isMuted.toggle()
+            showToast(chats[index].isMuted ? "已静音" : "已取消静音")
+        }
+    }
+
+    /// 删除会话
+    public func deleteChat(chatID: Int64) async {
+        chats.removeAll { $0.id == chatID }
+        messagesByChatID.removeValue(forKey: chatID)
+    }
+
+    // MARK: - Toast
+
+    public func showToast(_ message: String) {
+        toastMessage = message
+        // 2秒后自动清除
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            if self.toastMessage == message {
+                self.toastMessage = nil
+            }
+        }
+    }
+
+    // MARK: - Private
+
     private func perform(_ operation: @escaping () async throws -> Void) async {
         isBusy = true
         lastErrorMessage = nil
@@ -110,6 +185,16 @@ public final class TelegramSessionStore: ObservableObject {
             lastErrorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         }
         isBusy = false
+    }
+
+    /// 排序聊天列表：置顶优先 → 最近消息时间倒序
+    private func sortChats() {
+        chats.sort { lhs, rhs in
+            if lhs.isPinned != rhs.isPinned { return lhs.isPinned }
+            let lhsDate = lhs.lastMessageDate ?? .distantPast
+            let rhsDate = rhs.lastMessageDate ?? .distantPast
+            return lhsDate > rhsDate
+        }
     }
 
     private func syncAuthorizedAccount() {

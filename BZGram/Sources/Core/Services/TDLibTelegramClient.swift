@@ -6,6 +6,8 @@ public actor TDLibTelegramClient: TelegramClient {
     private static let manager = TDLibClientManager()
 
     private let configuration: TelegramAPIConfiguration
+    /// 实例标识，用于隔离不同账号的 TDLib 数据目录
+    private let instanceId: String
     private var client: TDLibClient
     private var state: TelegramAuthorizationState = .waitingForPhoneNumber
     private var currentTDLibState: AuthorizationState = .authorizationStateWaitTdlibParameters
@@ -13,8 +15,9 @@ public actor TDLibTelegramClient: TelegramClient {
     private var cachedUsers: [Int64: User] = [:]
     private var cachedChats: [Int64: TDLibKit.Chat] = [:]
 
-    public init(configuration: TelegramAPIConfiguration) {
+    public init(configuration: TelegramAPIConfiguration, instanceId: String = "default") {
         self.configuration = configuration
+        self.instanceId = instanceId
         self.client = Self.manager.createClient(updateHandler: { _, _ in })
     }
 
@@ -359,6 +362,8 @@ public actor TDLibTelegramClient: TelegramClient {
             appropriateFor: nil,
             create: true
         ).appendingPathComponent("BZGram", isDirectory: true)
+         .appendingPathComponent("accounts", isDirectory: true)
+         .appendingPathComponent(instanceId, isDirectory: true)
 
         let databaseDirectory = base.appendingPathComponent("tdlib-db", isDirectory: true)
         let filesDirectory = base.appendingPathComponent("tdlib-files", isDirectory: true)

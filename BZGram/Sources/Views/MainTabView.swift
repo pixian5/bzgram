@@ -1,42 +1,53 @@
 import SwiftUI
 import BZGramCore
 
-/// Main tab bar shown after a successful login.
+/// 主标签栏视图
 public struct MainTabView: View {
 
     @EnvironmentObject private var accountManager: AccountManager
     @EnvironmentObject private var settingsStore: SettingsStore
     @EnvironmentObject private var sessionStore: TelegramSessionStore
+    @State private var selectedTab: Tab = .chats
+
+    enum Tab: Hashable {
+        case chats, contacts, accounts, settings
+    }
 
     public init() {}
 
     public var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             ChatListView(
                 viewModel: ChatListViewModel(settingsStore: settingsStore, sessionStore: sessionStore)
             )
             .tabItem {
-                Label("Chats", systemImage: "message.fill")
+                Label("聊天", systemImage: "message.fill")
             }
+            .tag(Tab.chats)
+            .badge(sessionStore.chats.reduce(0) { $0 + $1.unreadCount })
+
+            ContactListView(
+                viewModel: ContactListViewModel()
+            )
+            .tabItem {
+                Label("联系人", systemImage: "person.crop.circle")
+            }
+            .tag(Tab.contacts)
 
             AccountListView(
                 viewModel: AccountListViewModel(manager: accountManager)
             )
             .tabItem {
-                Label("Accounts", systemImage: "person.2.fill")
+                Label("账号", systemImage: "person.2.fill")
             }
+            .tag(Tab.accounts)
 
             GlobalSettingsView()
                 .tabItem {
-                    Label("Settings", systemImage: "gear")
+                    Label("设置", systemImage: "gear")
                 }
+                .tag(Tab.settings)
         }
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button("Log Out") {
-                    Task { await sessionStore.logOut() }
-                }
-            }
-        }
+        .tint(.accentColor)
     }
 }

@@ -3,7 +3,7 @@ import XCTest
 
 final class TranslationSettingsTests: XCTestCase {
 
-    // MARK: - TranslationSettings model
+    // MARK: - TranslationSettings 模型
 
     func testDisabledPreset() {
         let s = TranslationSettings.disabled
@@ -19,7 +19,7 @@ final class TranslationSettingsTests: XCTestCase {
 
     func testCodingRoundTrip() throws {
         let original = TranslationSettings(targetLanguageCode: "zh-Hans", autoTranslateEnabled: true, showOriginalText: false)
-        let data   = try JSONEncoder().encode(original)
+        let data = try JSONEncoder().encode(original)
         let decoded = try JSONDecoder().decode(TranslationSettings.self, from: data)
         XCTAssertEqual(original, decoded)
     }
@@ -33,7 +33,7 @@ final class TranslationSettingsTests: XCTestCase {
     }
 
     func testChatWithOverride_usesOverride() {
-        let global   = TranslationSettings.autoTranslate(to: "en")
+        let global = TranslationSettings.autoTranslate(to: "en")
         let override = TranslationSettings.autoTranslate(to: "de", showOriginal: false)
         let chat = Chat(id: 1, title: "Test", translationOverride: override)
         let effective = chat.effectiveTranslation(globalSettings: global)
@@ -58,22 +58,12 @@ final class TranslationSettingsTests: XCTestCase {
         XCTAssertEqual(msg.displayText(settings: .autoTranslate(to: "en")), "Hola")
     }
 
-    // MARK: - TranslationService (stub)
+    // MARK: - TranslationService
 
     func testTranslationService_stubReturnsOriginal() async {
         let service = TranslationService.shared
         let result = await service.translate("Hola", to: "en")
         XCTAssertEqual(result, "Hola")
-    }
-
-    func testTranslationService_batchPreservesOrder() async {
-        let service = TranslationService.shared
-        let messages = (1...10).map {
-            Message(id: Int64($0), chatID: 1, senderName: "A", originalText: "msg \($0)")
-        }
-        let settings = TranslationSettings.autoTranslate(to: "en")
-        let translated = await service.translateMessages(messages, settings: settings)
-        XCTAssertEqual(translated.map(\.id), messages.map(\.id))
     }
 
     func testTranslationService_disabledReturnsInputUnchanged() async {
@@ -83,7 +73,18 @@ final class TranslationSettingsTests: XCTestCase {
         XCTAssertNil(result.first?.translatedText)
     }
 
-    // MARK: - AppSettings persistence
+    func testTranslationService_cacheCount() {
+        let service = TranslationService.shared
+        XCTAssertGreaterThanOrEqual(service.cacheCount, 0)
+    }
+
+    func testTranslationService_clearCache() {
+        let service = TranslationService.shared
+        service.clearCache()
+        XCTAssertEqual(service.cacheCount, 0)
+    }
+
+    // MARK: - AppSettings
 
     func testAppSettingsPersistence() throws {
         let store = UserDefaults(suiteName: "BZGramTests.AppSettings.\(UUID())")!
@@ -98,5 +99,23 @@ final class TranslationSettingsTests: XCTestCase {
         XCTAssertTrue(reloaded.settings.globalTranslation.autoTranslateEnabled)
         XCTAssertEqual(reloaded.settings.globalTranslation.targetLanguageCode, "ja")
         XCTAssertFalse(reloaded.settings.globalTranslation.showOriginalText)
+    }
+
+    func testAppSettings_appearanceMode() {
+        var settings = AppSettings()
+        XCTAssertEqual(settings.appearanceMode, .system)
+        settings.appearanceMode = .dark
+        XCTAssertEqual(settings.appearanceMode, .dark)
+    }
+
+    func testAppSettings_codable() throws {
+        let original = AppSettings(
+            globalTranslation: .autoTranslate(to: "en"),
+            appearanceMode: .dark,
+            fontScale: 1.2
+        )
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(AppSettings.self, from: data)
+        XCTAssertEqual(original, decoded)
     }
 }

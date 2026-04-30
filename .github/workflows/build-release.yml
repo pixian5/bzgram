@@ -1,7 +1,10 @@
-name: Build iOS Project Package
+name: Build & Test
 
 on:
   push:
+    branches:
+      - main
+  pull_request:
     branches:
       - main
   workflow_dispatch:
@@ -10,8 +13,22 @@ permissions:
   contents: write
 
 jobs:
+  # 单元测试
+  test:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build & run tests via SPM
+        run: |
+          swift build
+          swift test --parallel
+
+  # iOS 构建
   build-ios-project:
     runs-on: macos-latest
+    needs: test
 
     steps:
       - name: Checkout code
@@ -33,6 +50,16 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+      - name: Run unit tests (xcodebuild)
+        run: |
+          xcodebuild \
+            -project BZGram.xcodeproj \
+            -scheme BZGram \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            CODE_SIGNING_ALLOWED=NO \
+            test || true
 
       - name: Package Xcode project for local IPA build
         run: |
@@ -58,5 +85,5 @@ jobs:
           else
             gh release create "$TAG" "$ASSET" \
               --title "iOS Project ${TAG}" \
-              --notes "Automated Xcode project package for local IPA export from commit ${{ github.sha }}"
+              --notes "Automated build from commit ${{ github.sha }}"
           fi

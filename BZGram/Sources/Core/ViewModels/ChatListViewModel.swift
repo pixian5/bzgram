@@ -2,15 +2,25 @@ import Foundation
 #if canImport(Combine)
 import Combine
 
-/// View-model for the chat list of the active account.
+/// 聊天列表 ViewModel
 @MainActor
 public final class ChatListViewModel: ObservableObject {
 
     @Published public var chats: [Chat] = []
     @Published public var isLoading: Bool = false
+    @Published public var searchQuery: String = ""
+    @Published public var selectedFilter: ChatFilter = .all
 
     private let settingsStore: SettingsStore
     private let sessionStore: TelegramSessionStore
+
+    public enum ChatFilter: String, CaseIterable {
+        case all = "全部"
+        case unread = "未读"
+        case groups = "群组"
+        case channels = "频道"
+        case `private` = "私聊"
+    }
 
     public init(settingsStore: SettingsStore, sessionStore: TelegramSessionStore) {
         self.settingsStore = settingsStore
@@ -18,67 +28,118 @@ public final class ChatListViewModel: ObservableObject {
         self.chats = sessionStore.chats
     }
 
-    public func setTranslationOverride(_ override: TranslationSettings?, for chat: Chat) {
-        guard let index = chats.firstIndex(where: { $0.id == chat.id }) else { return }
-        chats[index].translationOverride = override
-    }
+    /// 按条件过滤后的聊天列表
+    public var filteredChats: [Chat] {
+        var result = chats
 
-    public func clearTranslationOverride(for chat: Chat) {
-        setTranslationOverride(nil, for: chat)
-    }
-
-    public func effectiveSettings(for chat: Chat) -> TranslationSettings {
-        chat.effectiveTranslation(globalSettings: settingsStore.settings.globalTranslation)
-    }
-
-    public func loadChats(for account: Account) async {
-        await MainActor.run { isLoading = true }
-        await sessionStore.refreshChats()
-        await MainActor.run {
-            chats = sessionStore.chats
-            isLoading = false
+        // 搜索过滤
+        if !searchQuery.isEmpty {
+            result = result.filter {
+                $0.title.localizedCaseInsensitiveContains(searchQuery) ||
+                ($0.lastMessageSnippet?.localizedCaseInsensitiveContains(searchQuery) ?? false)
+            }
         }
-    }
-}
-#else
-/// View-model for the chat list of the active account.
-@MainActor
-public final class ChatListViewModel {
 
-    public var chats: [Chat] = []
-    public var isLoading: Bool = false
+        // 类型过滤
+        switch selectedFilter {
+        case .all: break
+        case .unread: result = result.filter { $0.unreadCount > 0 }
+        case .groups: result = result.filter { $0.type == .group || $0.type == .supergroup }
+        case .channels: result = result.filter { $0.type == .channel }
+        case .private: result = result.filter { $0.type == .private }
+        }
 
-    private let settingsStore: SettingsStore
-    private let sessionStore: TelegramSessionStore
-
-    public init(settingsStore: SettingsStore, sessionStore: TelegramSessionStore) {
-        self.settingsStore = settingsStore
-        self.sessionStore = sessionStore
-        self.chats = sessionStore.chats
+        return result
     }
 
-    /// Update the per-conversation translation override.
     public func setTranslationOverride(_ override: TranslationSettings?, for chat: Chat) {
         guard let index = chats.firstIndex(where: { $0.id == chat.id }) else { return }
         chats[index].translationOverride = override
     }
 
-    /// Clear the per-conversation override so the chat falls back to the global setting.
     public func clearTranslationOverride(for chat: Chat) {
         setTranslationOverride(nil, for: chat)
     }
 
-    /// Returns the effective `TranslationSettings` for `chat`.
     public func effectiveSettings(for chat: Chat) -> TranslationSettings {
         chat.effectiveTranslation(globalSettings: settingsStore.settings.globalTranslation)
     }
 
-    /// Load chats for the given account (stub implementation).
     public func loadChats(for account: Account) async {
         isLoading = true
         await sessionStore.refreshChats()
         chats = sessionStore.chats
         isLoading = false
+    }
+
+    /// 置顶/取消置顶
+    public func togglePin(for chat: Chat) async {
+        await sessionStore.togglePin(for: chat.id)
+        chats = sessionStore.chats
+    }
+
+    /// 静音/取消静音
+    public func toggleMute(for chat: Chat) async {
+        await sessionStore.toggleMute(for: chat.id)
+        chats = sessionStore.chats
+    }
+
+    /// 标记为已读
+    public func markAsRead(_ chat: Chat) async {
+        await sessionStore.markAsRead(chatID: chat.id)
+        chats = sessionStore.chats
+    }
+
+    /// 删除会话
+    public func deleteChat(_ chat: Chat) async {
+        await sessionStore.deleteChat(chatID: chat.id)
+        chats = sessionStore.chats
+    }
+
+    /// 总未读数
+    public var totalUnreadCount: Int {
+        chats.reduce(0) { $0 + $1.unreadCount }
+    }
+}
+#else
+@MainActor
+public final class ChatListViewModel {
+
+    public var chats: [Chat] = []
+    public var isLoading: Bool = false
+    public var searchQuery: String = ""
+
+    private let settingsStore: SettingsStore
+    private let sessionStore: TelegramSessionStore
+
+    public init(settingsStore: SettingsStore, sessionStore: TelegramSessionStore) {
+        self.settingsStore = settingsStore
+        self.sessionStore = sessionStore
+        self.chats = sessionStore.chats
+    }
+
+    public func setTranslationOverride(_ override: TranslationSettings?, for chat: Chat) {
+        guard let index = chats.firstIndex(where: { $0.id == chat.id }) else { return }
+        chats[index].translationOverride = override
+    }
+
+    public func clearTranslationOverride(for chat: Chat) {
+        setTranslationOverride(nil, for: chat)
+    }
+
+    public func effectiveSettings(for chat: Chat) -> TranslationSettings {
+        chat.effectiveTranslation(globalSettings: settingsStore.settings.globalTranslation)
+    }
+
+    public func loadChats(for account: Account) async {
+        isLoading = true
+        await sessionStore.refreshChats()
+        chats = sessionStore.chats
+        isLoading = false
+    }
+
+    public var totalUnreadCount: Int {
+        chats.reduce(0) { $0 + $1.unreadCount }
     }
 }
 #endif

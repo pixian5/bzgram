@@ -1,0 +1,70 @@
+# Fastfile - BZGram 自动化打包配置
+# 使用方式: bundle exec fastlane ios build
+
+default_platform(:ios)
+
+platform :ios do
+
+  desc "运行所有单元测试"
+  lane :test do
+    # SPM 测试
+    sh("cd #{ENV['PWD']}/.. && swift test --parallel")
+
+    # Xcode 测试
+    run_tests(
+      project: "BZGram.xcodeproj",
+      scheme: "BZGram",
+      devices: ["iPhone 15"],
+      code_coverage: true,
+      output_types: "junit",
+      output_directory: "./test_output"
+    )
+  end
+
+  desc "构建 Debug 版本（模拟器）"
+  lane :build_debug do
+    # 确保 Xcode 项目存在
+    sh("cd #{ENV['PWD']}/.. && xcodegen generate") unless File.exist?("../BZGram.xcodeproj")
+
+    build_app(
+      project: "BZGram.xcodeproj",
+      scheme: "BZGram",
+      configuration: "Debug",
+      destination: "generic/platform=iOS Simulator",
+      skip_codesigning: true,
+      skip_archive: true
+    )
+  end
+
+  desc "构建 Release 版本并打包"
+  lane :build do
+    # 确保 Xcode 项目存在
+    sh("cd #{ENV['PWD']}/.. && xcodegen generate") unless File.exist?("../BZGram.xcodeproj")
+
+    build_app(
+      project: "BZGram.xcodeproj",
+      scheme: "BZGram",
+      configuration: "Release",
+      export_method: "development",
+      output_directory: "./build",
+      output_name: "BZGram.ipa"
+    )
+  end
+
+  desc "上传到 TestFlight"
+  lane :beta do
+    build
+
+    upload_to_testflight(
+      skip_waiting_for_build_processing: true
+    )
+  end
+
+  desc "递增构建号"
+  lane :bump do
+    increment_build_number(
+      xcodeproj: "BZGram.xcodeproj"
+    )
+  end
+
+end
