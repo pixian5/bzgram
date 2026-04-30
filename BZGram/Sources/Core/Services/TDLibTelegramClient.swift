@@ -6,6 +6,9 @@ public actor TDLibTelegramClient: TelegramClient {
     private static let manager = TDLibClientManager()
 
     private let configuration: TelegramAPIConfiguration
+    /// A stable directory name used to isolate this client's TDLib database from other accounts.
+    /// Typically derived from the account UUID so each account has its own on-disk storage.
+    private let storageDirectoryName: String
     private var client: TDLibClient
     private var state: TelegramAuthorizationState = .waitingForPhoneNumber
     private var currentTDLibState: AuthorizationState = .authorizationStateWaitTdlibParameters
@@ -13,8 +16,15 @@ public actor TDLibTelegramClient: TelegramClient {
     private var cachedUsers: [Int64: User] = [:]
     private var cachedChats: [Int64: TDLibKit.Chat] = [:]
 
-    public init(configuration: TelegramAPIConfiguration) {
+    /// Create a client for a specific account.
+    /// - Parameters:
+    ///   - configuration: Telegram API credentials.
+    ///   - storageDirectoryName: Subdirectory name used to isolate this account's TDLib database.
+    ///     Use a stable unique string (e.g. the account UUID string) so each account has
+    ///     its own on-disk storage and sessions never interfere with each other.
+    public init(configuration: TelegramAPIConfiguration, storageDirectoryName: String = "default") {
         self.configuration = configuration
+        self.storageDirectoryName = storageDirectoryName
         self.client = Self.manager.createClient(updateHandler: { _, _ in })
     }
 
@@ -359,6 +369,7 @@ public actor TDLibTelegramClient: TelegramClient {
             appropriateFor: nil,
             create: true
         ).appendingPathComponent("BZGram", isDirectory: true)
+            .appendingPathComponent(storageDirectoryName, isDirectory: true)
 
         let databaseDirectory = base.appendingPathComponent("tdlib-db", isDirectory: true)
         let filesDirectory = base.appendingPathComponent("tdlib-files", isDirectory: true)

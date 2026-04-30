@@ -9,36 +9,54 @@ public final class AccountListViewModel: ObservableObject {
     @Published public var activeAccount: Account?
 
     private let manager: AccountManager
+    private weak var multiAccountManager: MultiAccountSessionManager?
 
-    public init(manager: AccountManager) {
-        self.manager    = manager
-        self.accounts   = manager.accounts
-        self.activeAccount = manager.activeAccount
+    public init(manager: AccountManager, multiAccountManager: MultiAccountSessionManager? = nil) {
+        self.manager             = manager
+        self.multiAccountManager = multiAccountManager
+        self.accounts            = manager.accounts
+        self.activeAccount       = manager.activeAccount
     }
 
     public func addAccount(displayName: String, phoneNumber: String) {
-        manager.addAccount(displayName: displayName, phoneNumber: phoneNumber)
+        if let multiManager = multiAccountManager {
+            multiManager.addAccount(displayName: displayName, phoneNumber: phoneNumber)
+        } else {
+            manager.addAccount(displayName: displayName, phoneNumber: phoneNumber)
+        }
         refresh()
     }
 
     public func selectAccount(_ account: Account) {
-        manager.setActive(account)
+        if let multiManager = multiAccountManager {
+            multiManager.switchToAccount(account)
+        } else {
+            manager.setActive(account)
+        }
         refresh()
     }
 
     public func logoutAccount(_ account: Account) {
-        manager.logout(account.id)
+        if let multiManager = multiAccountManager {
+            Task { await multiManager.logoutAccount(account) }
+        } else {
+            manager.logout(account.id)
+        }
         refresh()
     }
 
     public func removeAccount(_ account: Account) {
-        manager.removeAccount(account.id)
+        if let multiManager = multiAccountManager {
+            Task { await multiManager.removeAccount(account) }
+        } else {
+            manager.removeAccount(account.id)
+        }
         refresh()
     }
 
     private func refresh() {
-        accounts       = manager.accounts
-        activeAccount  = manager.activeAccount
+        accounts      = manager.accounts
+        activeAccount = manager.activeAccount
     }
 }
 #else

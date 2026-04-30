@@ -7,7 +7,7 @@ public struct ChatListView: View {
     @ObservedObject var viewModel: ChatListViewModel
     @EnvironmentObject private var accountManager: AccountManager
     @EnvironmentObject private var settingsStore: SettingsStore
-    @EnvironmentObject private var sessionStore: TelegramSessionStore
+    @EnvironmentObject private var multiAccountManager: MultiAccountSessionManager
 
     public init(viewModel: ChatListViewModel) {
         self.viewModel = viewModel
@@ -32,8 +32,10 @@ public struct ChatListView: View {
             }
             .refreshable {
                 guard accountManager.activeAccount != nil else { return }
-                await sessionStore.refreshChats()
-                viewModel.chats = sessionStore.chats
+                if let session = multiAccountManager.activeSession {
+                    await session.refreshChats()
+                    viewModel.chats = session.chats
+                }
             }
         }
     }
