@@ -10,12 +10,19 @@ public final class ChatListViewModel: ObservableObject {
     @Published public var isLoading: Bool = false
 
     private let settingsStore: SettingsStore
-    private let sessionStore: TelegramSessionStore
+    public let sessionStore: TelegramSessionStore
+
+    private var cancellables: Set<AnyCancellable> = []
 
     public init(settingsStore: SettingsStore, sessionStore: TelegramSessionStore) {
         self.settingsStore = settingsStore
         self.sessionStore = sessionStore
         self.chats = sessionStore.chats
+
+        // Automatically reflect chat list changes published by the session store.
+        sessionStore.$chats
+            .receive(on: RunLoop.main)
+            .assign(to: &$chats)
     }
 
     public func setTranslationOverride(_ override: TranslationSettings?, for chat: Chat) {
@@ -49,7 +56,7 @@ public final class ChatListViewModel {
     public var isLoading: Bool = false
 
     private let settingsStore: SettingsStore
-    private let sessionStore: TelegramSessionStore
+    public let sessionStore: TelegramSessionStore
 
     public init(settingsStore: SettingsStore, sessionStore: TelegramSessionStore) {
         self.settingsStore = settingsStore

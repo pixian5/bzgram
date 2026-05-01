@@ -7,10 +7,18 @@ public struct ChatListView: View {
     @ObservedObject var viewModel: ChatListViewModel
     @EnvironmentObject private var accountManager: AccountManager
     @EnvironmentObject private var settingsStore: SettingsStore
-    @EnvironmentObject private var multiAccountManager: MultiAccountSessionManager
+    @State private var searchText = ""
 
     public init(viewModel: ChatListViewModel) {
         self.viewModel = viewModel
+    }
+
+    private var filteredChats: [Chat] {
+        guard !searchText.isEmpty else { return viewModel.chats }
+        return viewModel.chats.filter {
+            $0.title.localizedCaseInsensitiveContains(searchText)
+                || ($0.lastMessageSnippet?.localizedCaseInsensitiveContains(searchText) == true)
+        }
     }
 
     public var body: some View {
@@ -19,32 +27,30 @@ public struct ChatListView: View {
                 if viewModel.isLoading {
                     ProgressView("Loading chats…")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if viewModel.chats.isEmpty {
+                } else if filteredChats.isEmpty {
                     emptyState
                 } else {
                     chatList
                 }
             }
             .navigationTitle(accountManager.activeAccount?.displayName ?? "Chats")
+            .searchable(text: $searchText, prompt: "Search chats")
             .task {
                 guard let account = accountManager.activeAccount else { return }
                 await viewModel.loadChats(for: account)
             }
             .refreshable {
                 guard accountManager.activeAccount != nil else { return }
-                if let session = multiAccountManager.activeSession {
-                    await session.refreshChats()
-                    viewModel.chats = session.chats
-                }
+                await viewModel.sessionStore.refreshChats()
             }
         }
     }
 
     private var chatList: some View {
-        List(viewModel.chats) { chat in
+        List(filteredChats) { chat in
             NavigationLink {
                 ChatView(
-                    viewModel: ChatViewModel(chat: chat, settingsStore: settingsStore, sessionStore: sessionStore),
+                    viewModel: ChatViewModel(chat: chat, settingsStore: settingsStore, sessionStore: viewModel.sessionStore),
                     chatListViewModel: viewModel
                 )
             } label: {

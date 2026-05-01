@@ -6,6 +6,7 @@ import BZGramCore
 public struct GlobalSettingsView: View {
 
     @EnvironmentObject private var settingsStore: SettingsStore
+    @EnvironmentObject private var multiAccountManager: MultiAccountSessionManager
 
     private let supportedLanguages: [(code: String, name: String)] = [
         ("en", "English"),
@@ -35,6 +36,30 @@ public struct GlobalSettingsView: View {
     public var body: some View {
         NavigationStack {
             Form {
+                // MARK: Profile section
+                if let user = multiAccountManager.activeSession?.currentUser {
+                    Section("Profile") {
+                        HStack(spacing: 12) {
+                            Circle()
+                                .fill(Color.accentColor.opacity(0.2))
+                                .frame(width: 52, height: 52)
+                                .overlay(
+                                    Text(user.displayName.prefix(1).uppercased())
+                                        .font(.title2.bold())
+                                        .foregroundStyle(Color.accentColor)
+                                )
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(user.displayName)
+                                    .font(.body.bold())
+                                Text(user.phoneNumber)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
                 // MARK: Translation section
                 Section {
                     Toggle(
