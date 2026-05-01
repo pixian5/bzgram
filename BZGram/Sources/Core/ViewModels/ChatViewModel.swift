@@ -3,6 +3,7 @@ import Foundation
 import Combine
 
 /// 单个对话的 ViewModel（消息收发 + 翻译 + 编辑/撤回）
+/// 直接调用 TelegramSessionStore（已删除冗余 ChatService 中间层）
 @MainActor
 public final class ChatViewModel: ObservableObject {
 
@@ -13,6 +14,7 @@ public final class ChatViewModel: ObservableObject {
     @Published public var replyToMessage: Message?
     @Published public var searchQuery: String = ""
     @Published public var isSearching: Bool = false
+    @Published public var errorMessage: String?
 
     public let chat: Chat
     private let settingsStore: SettingsStore
@@ -34,6 +36,7 @@ public final class ChatViewModel: ObservableObject {
     /// 加载消息并翻译
     public func loadMessages() async {
         isLoading = true
+        errorMessage = nil
         await sessionStore.loadMessages(for: chat.id)
         let raw = sessionStore.messages(for: chat.id)
         let settings = effectiveSettings
@@ -45,14 +48,28 @@ public final class ChatViewModel: ObservableObject {
         isLoading = false
     }
 
-    /// 发送当前草稿消息
+    /// 发送当前草稿消息（带状态反馈）
     public func sendCurrentDraft() async {
         let outgoing = draftMessage.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !outgoing.isEmpty else { return }
         draftMessage = ""
         replyToMessage = nil
+        errorMessage = nil
+        // SessionStore.sendMessage 内部实现了 sending → sent/failed 状态机
         await sessionStore.sendMessage(outgoing, to: chat.id)
-        await loadMessages()
+        // 同步 SessionStore 中的消息到本地（包含发送状态）
+        messages = sessionStore.messages(for: chat.id)
+        // 检查是否有发送失败的消息
+        if let err = sessionStore.lastErrorMessage {
+            errorMessage = err
+        }
+    }
+
+    /// 重试发送失败的消息
+    public func retryMessage(_ message: Message) async {
+        errorMessage = nil
+        await sessionStore.retryMessage(message)
+        messages = sessionStore.messages(for: chat.id)
     }
 
     /// 编辑消息
@@ -94,7 +111,14 @@ public final class ChatViewModel: ObservableObject {
         replyToMessage = nil
     }
 
-    /// 搜索消息
+    /// 搜索消息（委托给 TDLib 服务端搜索）
+    public func performSearch() async {
+        guard !searchQuery.isEmpty else { return }
+        let results = await sessionStore.searchMessages(query: searchQuery, in: chat.id)
+        messages = results
+    }
+
+    /// 搜索过滤后的消息（本地快速过滤，用于 UI 即时响应）
     public var filteredMessages: [Message] {
         guard !searchQuery.isEmpty else { return messages }
         return messages.filter {
@@ -112,6 +136,11 @@ public final class ChatViewModel: ObservableObject {
     public var isEditing: Bool {
         editingMessage != nil
     }
+
+    /// 是否有发送失败的消息
+    public var hasFailedMessages: Bool {
+        messages.contains { $0.sendStatus == .failed }
+    }
 }
 #else
 @MainActor
@@ -122,6 +151,7 @@ public final class ChatViewModel {
     public var draftMessage: String = ""
     public var editingMessage: Message?
     public var replyToMessage: Message?
+    public var errorMessage: String?
 
     public let chat: Chat
     private let settingsStore: SettingsStore
@@ -158,11 +188,20 @@ public final class ChatViewModel {
         guard !outgoing.isEmpty else { return }
         draftMessage = ""
         await sessionStore.sendMessage(outgoing, to: chat.id)
-        await loadMessages()
+        messages = sessionStore.messages(for: chat.id)
+    }
+
+    public func retryMessage(_ message: Message) async {
+        await sessionStore.retryMessage(message)
+        messages = sessionStore.messages(for: chat.id)
     }
 
     public var effectiveSettings: TranslationSettings {
         chat.effectiveTranslation(globalSettings: settingsStore.settings.globalTranslation)
+    }
+
+    public var hasFailedMessages: Bool {
+        messages.contains { $0.sendStatus == .failed }
     }
 }
 #endif

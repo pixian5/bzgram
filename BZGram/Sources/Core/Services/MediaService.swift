@@ -1,19 +1,27 @@
 import Foundation
 
 /// 媒体文件下载/上传/预览服务
+/// 通过 TelegramClient 调用 TDLib downloadFile 执行实际下载
 public final class MediaService {
 
     public static let shared = MediaService()
 
     /// 媒体文件缓存目录
     private let cacheDirectory: URL
-    /// 当前下载任务
+    /// 当前下载任务（按 remoteFileId 去重）
     private var activeDownloads: [String: Task<URL, Error>] = [:]
+    /// 可选的 TelegramClient（用于 TDLib 文件下载）
+    private var client: TelegramClient?
 
     private init() {
         let base = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
         cacheDirectory = base.appendingPathComponent("BZGram/media", isDirectory: true)
         try? FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
+    }
+
+    /// 注入 TelegramClient（在 App 启动时调用）
+    public func configure(client: TelegramClient) {
+        self.client = client
     }
 
     // MARK: - 下载
@@ -34,17 +42,36 @@ public final class MediaService {
             throw MediaError.noRemoteFile
         }
 
-        // 防止重复下载
+        // 防止重复下载（同一文件只发起一次请求）
         if let existing = activeDownloads[remoteId] {
             return try await existing.value
         }
 
+        let capturedClient = client
+        let capturedCacheDir = cacheDirectory
+
         let task = Task<URL, Error> {
-            // TODO: 通过 TDLib 的 downloadFile API 执行实际下载
-            // 目前返回占位路径
+            // 通过 TDLib 下载文件
+            guard let client = capturedClient else {
+                throw MediaError.downloadFailed
+            }
+
+            let localPath = try await client.downloadFile(remoteFileId: remoteId)
+            guard !localPath.isEmpty else {
+                throw MediaError.downloadFailed
+            }
+
+            // 如果 TDLib 返回的路径已经是本地文件，直接返回
+            let sourceURL = URL(fileURLWithPath: localPath)
+            if FileManager.default.fileExists(atPath: sourceURL.path) {
+                return sourceURL
+            }
+
+            // 否则将文件复制到缓存目录
             let fileName = attachment.fileName ?? remoteId
-            let localURL = cacheDirectory.appendingPathComponent(fileName)
-            return localURL
+            let destURL = capturedCacheDir.appendingPathComponent(fileName)
+            try? FileManager.default.copyItem(at: sourceURL, to: destURL)
+            return destURL
         }
 
         activeDownloads[remoteId] = task

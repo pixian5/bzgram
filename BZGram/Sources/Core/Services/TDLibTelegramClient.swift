@@ -14,11 +14,23 @@ public actor TDLibTelegramClient: TelegramClient {
     private var currentTelegramUser: TelegramUser?
     private var cachedUsers: [Int64: User] = [:]
     private var cachedChats: [Int64: TDLibKit.Chat] = [:]
-
+    /// 实时更新委托
+    private weak var updateDelegate: TelegramUpdateDelegate?
     public init(configuration: TelegramAPIConfiguration, instanceId: String = "default") {
         self.configuration = configuration
         self.instanceId = instanceId
         self.client = Self.manager.createClient(updateHandler: { _, _ in })
+    }
+
+    public func setUpdateDelegate(_ delegate: TelegramUpdateDelegate?) {
+        self.updateDelegate = delegate
+        // 重建客户端以注册新的 updateHandler
+        self.client = Self.manager.createClient { [weak self] data, client in
+            guard let self = self else { return }
+            Task {
+                await self.handleUpdate(data)
+            }
+        }
     }
 
     public func authorizationState() async -> TelegramAuthorizationState {
@@ -375,8 +387,114 @@ public actor TDLibTelegramClient: TelegramClient {
     }
 
     private func rebuildClient() {
-        client = Self.manager.createClient(updateHandler: { _, _ in })
+        client = Self.manager.createClient { [weak self] data, client in
+            guard let self = self else { return }
+            Task {
+                await self.handleUpdate(data)
+            }
+        }
         currentTDLibState = .authorizationStateWaitTdlibParameters
+    }
+
+    // MARK: - TDLib 实时更新处理
+
+    /// 处理 TDLib 服务器推送的实时更新
+    private func handleUpdate(_ update: Data) {
+        guard let delegate = updateDelegate else { return }
+
+        // 解析 TDLib 更新 JSON
+        guard let json = try? JSONSerialization.jsonObject(with: update) as? [String: Any],
+              let type = json["@type"] as? String else { return }
+
+        switch type {
+        case "updateNewMessage":
+            // 收到新消息
+            guard let messageDict = json["message"] as? [String: Any],
+                  let chatId = messageDict["chat_id"] as? Int64,
+                  let messageId = messageDict["id"] as? Int64,
+                  let date = messageDict["date"] as? Int,
+                  let isOutgoing = messageDict["is_outgoing"] as? Bool else { return }
+
+            let text = extractTextFromUpdate(messageDict)
+            let senderName = extractSenderNameFromUpdate(messageDict)
+
+            let message = Message(
+                id: messageId,
+                chatID: chatId,
+                senderName: senderName,
+                originalText: text,
+                date: Foundation.Date(timeIntervalSince1970: TimeInterval(date)),
+                isOutgoing: isOutgoing
+            )
+            Task { @MainActor in delegate.didReceiveNewMessage(message) }
+
+        case "updateChatLastMessage":
+            // 聊天的最后一条消息变更
+            guard let chatId = json["chat_id"] as? Int64 else { return }
+            if let tdChat = cachedChats[chatId] {
+                let mapped = map(chat: tdChat)
+                Task { @MainActor in delegate.didUpdateChat(mapped) }
+            }
+
+        case "updateChatReadInbox":
+            // 收件箱已读回执
+            guard let chatId = json["chat_id"] as? Int64,
+                  let unreadCount = json["unread_count"] as? Int else { return }
+            Task { @MainActor in delegate.didUpdateUnreadCount(chatID: chatId, unreadCount: unreadCount) }
+
+        case "updateMessageContent":
+            // 消息内容被编辑
+            guard let chatId = json["chat_id"] as? Int64,
+                  let messageId = json["message_id"] as? Int64,
+                  let newContent = json["new_content"] as? [String: Any],
+                  let contentType = newContent["@type"] as? String,
+                  contentType == "messageText",
+                  let textObj = newContent["text"] as? [String: Any],
+                  let newText = textObj["text"] as? String else { return }
+            Task { @MainActor in delegate.didUpdateMessageContent(chatID: chatId, messageID: messageId, newText: newText) }
+
+        case "updateDeleteMessages":
+            // 消息被删除
+            guard let chatId = json["chat_id"] as? Int64,
+                  let messageIds = json["message_ids"] as? [Int64],
+                  let isPermanent = json["is_permanent"] as? Bool,
+                  isPermanent else { return }
+            Task { @MainActor in delegate.didDeleteMessages(chatID: chatId, messageIDs: messageIds) }
+
+        default:
+            break
+        }
+    }
+
+    private func extractTextFromUpdate(_ messageDict: [String: Any]) -> String {
+        guard let content = messageDict["content"] as? [String: Any],
+              let contentType = content["@type"] as? String else { return "" }
+        switch contentType {
+        case "messageText":
+            return (content["text"] as? [String: Any])?["text"] as? String ?? ""
+        case "messagePhoto":
+            return (content["caption"] as? [String: Any])?["text"] as? String ?? "[图片]"
+        case "messageVideo":
+            return (content["caption"] as? [String: Any])?["text"] as? String ?? "[视频]"
+        case "messageDocument":
+            return (content["caption"] as? [String: Any])?["text"] as? String ?? "[文件]"
+        default:
+            return "[不支持的消息类型]"
+        }
+    }
+
+    private func extractSenderNameFromUpdate(_ messageDict: [String: Any]) -> String {
+        guard let senderId = messageDict["sender_id"] as? [String: Any] else { return "Unknown" }
+        if let userId = senderId["user_id"] as? Int64 {
+            if let user = cachedUsers[userId] {
+                return Self.displayName(firstName: user.firstName, lastName: user.lastName)
+            }
+            return "User \(userId)"
+        }
+        if let chatId = senderId["chat_id"] as? Int64 {
+            return cachedChats[chatId]?.title ?? "Chat \(chatId)"
+        }
+        return "Unknown"
     }
 
     private func map(error: Swift.Error) -> TelegramClientError {

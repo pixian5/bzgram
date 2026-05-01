@@ -5,6 +5,7 @@ import Combine
 
 /// 中心化的 Telegram 会话状态管理器。
 /// 管理认证状态、聊天数据、消息数据及所有通信操作。
+/// 同时实现 TelegramUpdateDelegate 接收 TDLib 实时推送。
 @MainActor
 public final class TelegramSessionStore: ObservableObject {
 
@@ -35,6 +36,8 @@ public final class TelegramSessionStore: ObservableObject {
     // MARK: - 认证流程
 
     public func start() async {
+        // 注册实时更新委托
+        await client.setUpdateDelegate(self)
         authorizationState = await client.authorizationState()
         currentUser = await client.currentUser()
         if isAuthorized {
@@ -85,6 +88,7 @@ public final class TelegramSessionStore: ObservableObject {
     public func refreshChats() async {
         await perform { [self] in
             self.chats = try await self.client.fetchChats()
+            self.sortChats()
         }
     }
 
@@ -94,14 +98,50 @@ public final class TelegramSessionStore: ObservableObject {
         }
     }
 
+    /// 发送消息，带状态反馈（sending → sent / failed）
     public func sendMessage(_ text: String, to chatID: Int64) async {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        await perform { [self] in
-            _ = try await self.client.sendMessage(trimmed, to: chatID)
-            self.messagesByChatID[chatID] = try await self.client.fetchMessages(in: chatID)
-            self.chats = try await self.client.fetchChats()
+
+        // 1. 立即插入一条"发送中"的占位消息，让 UI 即时反馈
+        let pendingID = -Int64(Date().timeIntervalSince1970 * 1000)
+        let pendingMessage = Message(
+            id: pendingID,
+            chatID: chatID,
+            senderName: currentUser?.displayName ?? "Me",
+            originalText: trimmed,
+            date: Date(),
+            isOutgoing: true,
+            canBeEdited: true,
+            sendStatus: .sending
+        )
+        messagesByChatID[chatID, default: []].append(pendingMessage)
+
+        // 2. 调用 TDLib 发送
+        do {
+            let sent = try await client.sendMessage(trimmed, to: chatID)
+            // 3. 成功：用真实消息替换占位消息
+            if let index = messagesByChatID[chatID]?.firstIndex(where: { $0.id == pendingID }) {
+                messagesByChatID[chatID]?[index] = sent
+            }
+            // 刷新聊天列表以更新最后消息
+            chats = try await client.fetchChats()
+            sortChats()
+        } catch {
+            // 4. 失败：标记占位消息为"发送失败"
+            if let index = messagesByChatID[chatID]?.firstIndex(where: { $0.id == pendingID }) {
+                messagesByChatID[chatID]?[index].sendStatus = .failed
+            }
+            lastErrorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         }
+    }
+
+    /// 重试发送失败的消息
+    public func retryMessage(_ message: Message) async {
+        // 移除失败的占位消息
+        messagesByChatID[message.chatID]?.removeAll { $0.id == message.id }
+        // 重新发送
+        await sendMessage(message.originalText, to: message.chatID)
     }
 
     public func messages(for chatID: Int64) -> [Message] {
@@ -161,11 +201,25 @@ public final class TelegramSessionStore: ObservableObject {
         messagesByChatID.removeValue(forKey: chatID)
     }
 
+    // MARK: - 搜索（委托给 TDLib 服务端）
+
+    /// 服务端搜索消息，避免内存中遍历全量消息导致性能问题
+    public func searchMessages(query: String, in chatID: Int64, limit: Int = 50) async -> [Message] {
+        guard !query.isEmpty else { return messages(for: chatID) }
+        do {
+            return try await client.searchMessages(query: query, in: chatID, limit: limit)
+        } catch {
+            // 搜索失败时回退到本地过滤（仅过滤已加载的消息）
+            return messages(for: chatID).filter {
+                $0.originalText.localizedCaseInsensitiveContains(query)
+            }
+        }
+    }
+
     // MARK: - Toast
 
     public func showToast(_ message: String) {
         toastMessage = message
-        // 2秒后自动清除
         Task { @MainActor in
             try? await Task.sleep(nanoseconds: 2_000_000_000)
             if self.toastMessage == message {
@@ -219,6 +273,70 @@ public final class TelegramSessionStore: ObservableObject {
         )
         if let refreshed = accountManager.accounts.first(where: { $0.id == newAccount.id }) {
             accountManager.setActive(refreshed)
+        }
+    }
+}
+
+// MARK: - TelegramUpdateDelegate
+
+extension TelegramSessionStore: TelegramUpdateDelegate {
+
+    /// 收到新消息 → 自动插入到对应聊天的消息列表
+    public nonisolated func didReceiveNewMessage(_ message: Message) {
+        Task { @MainActor in
+            self.messagesByChatID[message.chatID, default: []].append(message)
+        }
+    }
+
+    /// 聊天信息更新（最后消息变更等）→ 更新聊天列表
+    public nonisolated func didUpdateChat(_ chat: Chat) {
+        Task { @MainActor in
+            if let index = self.chats.firstIndex(where: { $0.id == chat.id }) {
+                // 保留本地状态（置顶、静音等）
+                var updated = chat
+                updated.isPinned = self.chats[index].isPinned
+                updated.isMuted = self.chats[index].isMuted
+                self.chats[index] = updated
+            } else {
+                self.chats.append(chat)
+            }
+            self.sortChats()
+        }
+    }
+
+    /// 未读计数变更 → 同步更新本地聊天的 unreadCount
+    public nonisolated func didUpdateUnreadCount(chatID: Int64, unreadCount: Int) {
+        Task { @MainActor in
+            if let index = self.chats.firstIndex(where: { $0.id == chatID }) {
+                self.chats[index].unreadCount = unreadCount
+            }
+        }
+    }
+
+    /// 消息内容被编辑 → 更新本地消息
+    public nonisolated func didUpdateMessageContent(chatID: Int64, messageID: Int64, newText: String) {
+        Task { @MainActor in
+            if let index = self.messagesByChatID[chatID]?.firstIndex(where: { $0.id == messageID }) {
+                // Message 是 struct，需要重新构造（只改 originalText 和 isEdited）
+                var msg = self.messagesByChatID[chatID]![index]
+                msg = Message(
+                    id: msg.id, chatID: msg.chatID, senderName: msg.senderName,
+                    senderUserID: msg.senderUserID, originalText: newText,
+                    translatedText: nil, date: msg.date, isOutgoing: msg.isOutgoing,
+                    contentType: msg.contentType, attachment: msg.attachment,
+                    isEdited: true, replyToMessageId: msg.replyToMessageId,
+                    canBeDeleted: msg.canBeDeleted, canBeEdited: msg.canBeEdited,
+                    sendStatus: msg.sendStatus
+                )
+                self.messagesByChatID[chatID]![index] = msg
+            }
+        }
+    }
+
+    /// 消息被删除 → 从本地列表移除
+    public nonisolated func didDeleteMessages(chatID: Int64, messageIDs: [Int64]) {
+        Task { @MainActor in
+            self.messagesByChatID[chatID]?.removeAll { messageIDs.contains($0.id) }
         }
     }
 }

@@ -4,18 +4,30 @@ import Combine
 #endif
 
 /// 联系人管理服务
+/// 通过 TelegramClient 从 TDLib 获取真实联系人数据
 public final class ContactService {
 
+    private let client: TelegramClient
     private var contacts: [Contact] = []
     private var contactsByID: [Int64: Contact] = [:]
 
-    public init() {}
+    /// 必须从外部注入 TelegramClient，保持 DI 一致性
+    public init(client: TelegramClient) {
+        self.client = client
+    }
 
     // MARK: - Public API
 
-    /// 获取所有联系人（按名称排序）
+    /// 从 TDLib 获取联系人列表（按名称排序）
     public func fetchContacts() async -> [Contact] {
-        return contacts.sorted { $0.displayName < $1.displayName }
+        do {
+            let fetched = try await client.fetchContacts()
+            updateContacts(fetched)
+            return contacts.sorted { $0.displayName < $1.displayName }
+        } catch {
+            // TDLib 获取失败时返回本地缓存
+            return contacts.sorted { $0.displayName < $1.displayName }
+        }
     }
 
     /// 搜索联系人
@@ -33,7 +45,7 @@ public final class ContactService {
         contactsByID[userID]
     }
 
-    /// 更新联系人列表
+    /// 更新联系人列表（来自 TDLib 推送或手动刷新）
     public func updateContacts(_ newContacts: [Contact]) {
         contacts = newContacts
         contactsByID = Dictionary(uniqueKeysWithValues: newContacts.map { ($0.id, $0) })

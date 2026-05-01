@@ -14,6 +14,16 @@ public enum MessageContentType: String, Codable, Equatable {
     case unsupported
 }
 
+/// 消息发送状态
+public enum MessageSendStatus: String, Codable, Equatable {
+    /// 正在发送（UI 显示加载指示器）
+    case sending
+    /// 已发送到服务器
+    case sent
+    /// 发送失败（UI 显示红色感叹号 + 重试按钮）
+    case failed
+}
+
 /// 附件信息
 public struct MessageAttachment: Codable, Equatable {
     /// 文件名
@@ -83,6 +93,8 @@ public struct Message: Identifiable, Codable, Equatable {
     public var canBeDeleted: Bool
     /// 消息是否可编辑
     public var canBeEdited: Bool
+    /// 发送状态（仅对外发消息有意义）
+    public var sendStatus: MessageSendStatus
 
     public init(
         id: Int64,
@@ -98,7 +110,8 @@ public struct Message: Identifiable, Codable, Equatable {
         isEdited: Bool = false,
         replyToMessageId: Int64? = nil,
         canBeDeleted: Bool = true,
-        canBeEdited: Bool = false
+        canBeEdited: Bool = false,
+        sendStatus: MessageSendStatus = .sent
     ) {
         self.id = id
         self.chatID = chatID
@@ -114,6 +127,7 @@ public struct Message: Identifiable, Codable, Equatable {
         self.replyToMessageId = replyToMessageId
         self.canBeDeleted = canBeDeleted
         self.canBeEdited = canBeEdited
+        self.sendStatus = sendStatus
     }
 
     /// 根据翻译设置返回应显示的文本

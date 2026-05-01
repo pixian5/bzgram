@@ -3,6 +3,7 @@ import Foundation
 import Combine
 
 /// 联系人列表 ViewModel
+/// 通过外部注入 ContactService 保持 DI 一致性
 @MainActor
 public final class ContactListViewModel: ObservableObject {
 
@@ -12,7 +13,8 @@ public final class ContactListViewModel: ObservableObject {
 
     private let contactService: ContactService
 
-    public init(contactService: ContactService = ContactService()) {
+    /// 必须从外部注入 ContactService（不再使用默认参数）
+    public init(contactService: ContactService) {
         self.contactService = contactService
     }
 
@@ -55,7 +57,7 @@ public final class ContactListViewModel {
     public var searchQuery: String = ""
     private let contactService: ContactService
 
-    public init(contactService: ContactService = ContactService()) {
+    public init(contactService: ContactService) {
         self.contactService = contactService
     }
 

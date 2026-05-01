@@ -173,15 +173,15 @@ final class ViewModelTests: XCTestCase {
         XCTAssertNil(vm.chats[0].translationOverride)
     }
 
-    // MARK: - ContactListViewModel
+    // MARK: - ContactListViewModel（DI 统一，必须注入 ContactService）
 
     func testContactListVM_groupedContacts() {
-        let service = ContactService()
+        let client = MockTelegramClient()
+        let service = ContactService(client: client)
         service.addContact(Contact(id: 1, displayName: "Alice"))
         service.addContact(Contact(id: 2, displayName: "Bob"))
         service.addContact(Contact(id: 3, displayName: "Adam"))
         let vm = ContactListViewModel(contactService: service)
-        // 手动设置 contacts
         vm.contacts = [
             Contact(id: 1, displayName: "Alice"),
             Contact(id: 2, displayName: "Bob"),
@@ -195,7 +195,9 @@ final class ViewModelTests: XCTestCase {
     }
 
     func testContactListVM_search() {
-        let vm = ContactListViewModel()
+        let client = MockTelegramClient()
+        let service = ContactService(client: client)
+        let vm = ContactListViewModel(contactService: service)
         vm.contacts = [
             Contact(id: 1, displayName: "Alice"),
             Contact(id: 2, displayName: "Bob")
@@ -207,12 +209,45 @@ final class ViewModelTests: XCTestCase {
     }
 
     func testContactListVM_onlineCount() {
-        let vm = ContactListViewModel()
+        let client = MockTelegramClient()
+        let service = ContactService(client: client)
+        let vm = ContactListViewModel(contactService: service)
         vm.contacts = [
             Contact(id: 1, displayName: "Alice", status: .online),
             Contact(id: 2, displayName: "Bob", status: .offline),
             Contact(id: 3, displayName: "Charlie", status: .online)
         ]
         XCTAssertEqual(vm.onlineCount, 2)
+    }
+
+    // MARK: - ChatViewModel（消息状态）
+
+    func testChatVM_hasFailedMessages() {
+        let store = SettingsStore(store: UserDefaults(suiteName: "test.\(UUID())")!)
+        let manager = AccountManager(keychain: .shared, legacyStore: UserDefaults(suiteName: "test.\(UUID())")!)
+        let session = TelegramSessionStore(client: MockTelegramClient(), accountManager: manager)
+        let chat = Chat(id: 1, title: "Test")
+        let vm = ChatViewModel(chat: chat, settingsStore: store, sessionStore: session)
+
+        vm.messages = [
+            Message(id: 1, chatID: 1, senderName: "A", originalText: "OK", sendStatus: .sent),
+            Message(id: 2, chatID: 1, senderName: "A", originalText: "Fail", sendStatus: .failed)
+        ]
+
+        XCTAssertTrue(vm.hasFailedMessages)
+    }
+
+    func testChatVM_noFailedMessages() {
+        let store = SettingsStore(store: UserDefaults(suiteName: "test.\(UUID())")!)
+        let manager = AccountManager(keychain: .shared, legacyStore: UserDefaults(suiteName: "test.\(UUID())")!)
+        let session = TelegramSessionStore(client: MockTelegramClient(), accountManager: manager)
+        let chat = Chat(id: 1, title: "Test")
+        let vm = ChatViewModel(chat: chat, settingsStore: store, sessionStore: session)
+
+        vm.messages = [
+            Message(id: 1, chatID: 1, senderName: "A", originalText: "OK", sendStatus: .sent)
+        ]
+
+        XCTAssertFalse(vm.hasFailedMessages)
     }
 }

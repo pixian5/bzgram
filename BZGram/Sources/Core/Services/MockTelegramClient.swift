@@ -9,8 +9,13 @@ public actor MockTelegramClient: TelegramClient {
     private var chatsStorage: [Chat] = []
     private var messagesStorage: [Int64: [Message]] = [:]
     private var pendingPhoneNumber: String?
+    private weak var updateDelegate: TelegramUpdateDelegate?
 
     public init() {}
+
+    public func setUpdateDelegate(_ delegate: TelegramUpdateDelegate?) {
+        self.updateDelegate = delegate
+    }
 
     public func authorizationState() async -> TelegramAuthorizationState {
         state
@@ -153,6 +158,27 @@ public actor MockTelegramClient: TelegramClient {
             throw TelegramClientError.chatNotFound
         }
         chatsStorage[index].unreadCount = 0
+    }
+
+    public func searchMessages(query: String, in chatID: Int64, limit: Int) async throws -> [Message] {
+        guard case .ready = state else { throw TelegramClientError.unauthorized }
+        guard let messages = messagesStorage[chatID] else { throw TelegramClientError.chatNotFound }
+        let results = messages.filter { $0.originalText.localizedCaseInsensitiveContains(query) }
+        return Array(results.prefix(limit))
+    }
+
+    public func fetchContacts() async throws -> [Contact] {
+        guard case .ready = state else { throw TelegramClientError.unauthorized }
+        return [
+            Contact(id: 100, displayName: "Alice", username: "alice", status: .online),
+            Contact(id: 101, displayName: "Bob", username: "bob", status: .offline),
+            Contact(id: 102, displayName: "Charlie", username: "charlie", status: .recently)
+        ]
+    }
+
+    public func downloadFile(remoteFileId: String) async throws -> String {
+        // Mock 不做实际下载
+        return ""
     }
 
     // MARK: - 演示数据
