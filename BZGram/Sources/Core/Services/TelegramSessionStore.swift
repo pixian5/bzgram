@@ -22,7 +22,7 @@ public final class TelegramSessionStore: ObservableObject {
     private let accountManager: AccountManager
 
     public init(
-        client: TelegramClient = MockTelegramClient(),
+        client: TelegramClient,
         accountManager: AccountManager
     ) {
         self.client = client

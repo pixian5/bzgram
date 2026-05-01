@@ -5,7 +5,7 @@ import Combine
 
 /// 联系人管理服务
 /// 通过 TelegramClient 从 TDLib 获取真实联系人数据
-public final class ContactService {
+public final class ContactService: ObservableObject {
 
     private let client: TelegramClient
     private var contacts: [Contact] = []

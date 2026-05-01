@@ -5,26 +5,35 @@ import BZGramCore
 @main
 public struct BZGramApp: App {
 
-    @StateObject private var accountManager = AccountManager()
-    @StateObject private var settingsStore = SettingsStore()
+    @StateObject private var accountManager: AccountManager
+    @StateObject private var settingsStore: SettingsStore
     @StateObject private var sessionStore: TelegramSessionStore
+    @StateObject private var contactService: ContactService
 
     /// 全局异常捕获标记
     @State private var hasError = false
 
     public init() {
-        let accountManager = AccountManager()
-        _accountManager = StateObject(wrappedValue: accountManager)
-        _settingsStore = StateObject(wrappedValue: SettingsStore())
+        let manager = AccountManager()
+        let settings = SettingsStore()
 
-        // 使用活跃账号的 TDLib 客户端（如果有的话）
-        let client = accountManager.activeClient
-        _sessionStore = StateObject(
-            wrappedValue: TelegramSessionStore(
-                client: client,
-                accountManager: accountManager
-            )
+        // 使用活跃账号的 TDLib 客户端
+        let client = manager.activeClient
+        let session = TelegramSessionStore(
+            client: client,
+            accountManager: manager
         )
+
+        // 创建联系人服务（注入同一个 TelegramClient）
+        let contacts = ContactService(client: client)
+
+        // 配置 MediaService 的下载通道
+        MediaService.shared.configure(client: client)
+
+        _accountManager = StateObject(wrappedValue: manager)
+        _settingsStore = StateObject(wrappedValue: settings)
+        _sessionStore = StateObject(wrappedValue: session)
+        _contactService = StateObject(wrappedValue: contacts)
 
         // 全局异常捕获
         setupGlobalExceptionHandler()
@@ -37,6 +46,7 @@ public struct BZGramApp: App {
                     .environmentObject(accountManager)
                     .environmentObject(settingsStore)
                     .environmentObject(sessionStore)
+                    .environmentObject(contactService)
                     .preferredColorScheme(
                         settingsStore.settings.appearanceMode == .system ? nil :
                         settingsStore.settings.appearanceMode == .dark ? .dark : .light

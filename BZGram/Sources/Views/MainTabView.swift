@@ -5,8 +5,9 @@ import BZGramCore
 public struct MainTabView: View {
 
     @EnvironmentObject private var accountManager: AccountManager
-    @EnvironmentObject private var settingsStore: SettingsStore
-    @EnvironmentObject private var sessionStore: TelegramSessionStore
+    @EnvironmentObject private var appSettings: SettingsStore
+    @EnvironmentObject private var telegramSession: TelegramSessionStore
+    @EnvironmentObject private var contactService: ContactService
     @State private var selectedTab: Tab = .chats
 
     enum Tab: Hashable {
@@ -18,16 +19,16 @@ public struct MainTabView: View {
     public var body: some View {
         TabView(selection: $selectedTab) {
             ChatListView(
-                viewModel: ChatListViewModel(settingsStore: settingsStore, sessionStore: sessionStore)
+                viewModel: ChatListViewModel(settingsStore: appSettings, sessionStore: telegramSession)
             )
             .tabItem {
                 Label("聊天", systemImage: "message.fill")
             }
             .tag(Tab.chats)
-            .badge(sessionStore.chats.reduce(0) { $0 + $1.unreadCount })
+            .badge(telegramSession.chats.reduce(0) { $0 + $1.unreadCount })
 
             ContactListView(
-                viewModel: ContactListViewModel()
+                viewModel: ContactListViewModel(contactService: contactService)
             )
             .tabItem {
                 Label("联系人", systemImage: "person.crop.circle")
