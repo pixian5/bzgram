@@ -24,7 +24,7 @@ public struct AuthenticationView: View {
                 Spacer()
             }
             .padding(24)
-            .navigationTitle("Sign In")
+            .navigationTitle("登录")
             .task {
                 if !sessionStore.isAuthorized {
                     await sessionStore.start()
@@ -35,9 +35,9 @@ public struct AuthenticationView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Telegram Client")
+            Text("Telegram 登录")
                 .font(.largeTitle.bold())
-            Text("没有配置 Telegram API 参数时会自动使用演示后端，默认验证码是 `12345`。配置完成后会自动切换到真实 TDLib 登录。")
+            Text("没有配置 Telegram API 参数时会自动使用演示后端，默认验证码是 12345。配置完成后会自动切换到真实 TDLib 登录。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -55,7 +55,7 @@ public struct AuthenticationView: View {
         case .ready:
             readyState
         case .loggingOut:
-            ProgressView("Signing out…")
+            ProgressView("正在退出…")
         }
     }
 
@@ -74,7 +74,7 @@ public struct AuthenticationView: View {
                     ProgressView()
                         .frame(maxWidth: .infinity)
                 } else {
-                    Text("Continue")
+                    Text("继续")
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -85,7 +85,7 @@ public struct AuthenticationView: View {
 
     private func codeForm(phoneNumber: String) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("We sent a verification code to `\(phoneNumber)`.")
+            Text("验证码已发送到 \(phoneNumber)，请查收。")
                 .foregroundStyle(.secondary)
             TextField("12345", text: $verificationCode)
                 .keyboardType(.numberPad)
@@ -97,7 +97,7 @@ public struct AuthenticationView: View {
                     ProgressView()
                         .frame(maxWidth: .infinity)
                 } else {
-                    Text("Verify Code")
+                    Text("验证")
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -108,9 +108,9 @@ public struct AuthenticationView: View {
 
     private func passwordForm(hint: String?) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(hint ?? "Enter your Telegram two-step verification password.")
+            Text(hint ?? "请输入你的 Telegram 两步验证密码。")
                 .foregroundStyle(.secondary)
-            SecureField("Password", text: $password)
+            SecureField("密码", text: $password)
                 .textFieldStyle(.roundedBorder)
             Button {
                 Task { await sessionStore.submitPassword(password) }
@@ -119,7 +119,7 @@ public struct AuthenticationView: View {
                     ProgressView()
                         .frame(maxWidth: .infinity)
                 } else {
-                    Text("Unlock")
+                    Text("解锁")
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -130,9 +130,9 @@ public struct AuthenticationView: View {
 
     private var readyState: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label("Signed in as \(sessionStore.currentUser?.displayName ?? "Telegram User")", systemImage: "checkmark.circle.fill")
+            Label("已登录：\(sessionStore.currentUser?.displayName ?? "Telegram 用户")", systemImage: "checkmark.circle.fill")
                 .foregroundStyle(.green)
-            Text("The authenticated app shell is ready. Continue into chats, accounts, and settings.")
+            Text("认证完成。现在可以进入聊天、账号管理和设置页面。")
                 .foregroundStyle(.secondary)
         }
     }

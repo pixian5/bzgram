@@ -23,11 +23,17 @@ public struct ChatView: View {
                 messageList
                 editingBanner
                 replyBanner
+                errorBanner
                 composer
             }
         }
         .navigationTitle(viewModel.chat.title)
         .navigationBarTitleDisplayMode(.inline)
+        .searchable(
+            text: $viewModel.searchQuery,
+            isPresented: $viewModel.isSearching,
+            prompt: "搜索消息…"
+        )
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 HStack(spacing: 12) {
@@ -60,13 +66,6 @@ public struct ChatView: View {
     private var messageList: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                // 搜索栏
-                if viewModel.isSearching {
-                    TextField("搜索消息…", text: $viewModel.searchQuery)
-                        .textFieldStyle(.roundedBorder)
-                        .padding()
-                }
-
                 LazyVStack(spacing: 6) {
                     let displayMessages = viewModel.isSearching ? viewModel.filteredMessages : viewModel.messages
                     ForEach(displayMessages) { message in
@@ -75,7 +74,8 @@ public struct ChatView: View {
                             settings: viewModel.effectiveSettings,
                             onEdit: { viewModel.startEditing(message) },
                             onDelete: { Task { await viewModel.deleteMessage(message) } },
-                            onReply: { viewModel.setReply(to: message) }
+                            onReply: { viewModel.setReply(to: message) },
+                            onRetry: { Task { await viewModel.retryMessage(message) } }
                         )
                         .id(message.id)
                     }
@@ -157,6 +157,31 @@ public struct ChatView: View {
         }
     }
 
+    // MARK: - 错误提示
+
+    @ViewBuilder
+    private var errorBanner: some View {
+        if let error = viewModel.errorMessage {
+            HStack {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.red)
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                Spacer()
+                Button {
+                    viewModel.errorMessage = nil
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+            .background(Color.red.opacity(0.1))
+        }
+    }
+
     // MARK: - 消息输入框
 
     private var composer: some View {
@@ -200,6 +225,7 @@ private struct MessageBubbleView: View {
     var onEdit: () -> Void
     var onDelete: () -> Void
     var onReply: () -> Void
+    var onRetry: () -> Void
 
     private var displayText: String { message.displayText(settings: settings) }
     private var showOriginal: Bool {
@@ -242,31 +268,37 @@ private struct MessageBubbleView: View {
                 }
                 .padding(10)
                 .background(
-                    message.isOutgoing
-                        ? Color.accentColor
-                        : Color(.systemGray5),
+                    bubbleBackgroundColor,
                     in: RoundedRectangle(cornerRadius: 16)
                 )
-                .foregroundStyle(message.isOutgoing ? .white : .primary)
+                .foregroundStyle(message.isOutgoing && message.sendStatus != .failed ? .white : .primary)
                 .contextMenu {
-                    Button { UIPasteboard.general.string = displayText } label: {
-                        Label("复制", systemImage: "doc.on.doc")
-                    }
-                    Button(action: onReply) {
-                        Label("回复", systemImage: "arrowshape.turn.up.left")
-                    }
-                    if message.canBeEdited {
-                        Button(action: onEdit) {
-                            Label("编辑", systemImage: "pencil")
+                    // 发送失败的消息只显示重试
+                    if message.sendStatus == .failed {
+                        Button(action: onRetry) {
+                            Label("重新发送", systemImage: "arrow.clockwise")
                         }
-                    }
-                    if message.canBeDeleted {
-                        Button(role: .destructive, action: onDelete) {
-                            Label("撤回", systemImage: "trash")
+                    } else {
+                        Button { UIPasteboard.general.string = displayText } label: {
+                            Label("复制", systemImage: "doc.on.doc")
+                        }
+                        Button(action: onReply) {
+                            Label("回复", systemImage: "arrowshape.turn.up.left")
+                        }
+                        if message.canBeEdited {
+                            Button(action: onEdit) {
+                                Label("编辑", systemImage: "pencil")
+                            }
+                        }
+                        if message.canBeDeleted {
+                            Button(role: .destructive, action: onDelete) {
+                                Label("撤回", systemImage: "trash")
+                            }
                         }
                     }
                 }
 
+                // 状态行
                 HStack(spacing: 4) {
                     Text(message.formattedTime)
                         .font(.caption2)
@@ -276,10 +308,43 @@ private struct MessageBubbleView: View {
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
+                    // 发送状态指示器
+                    if message.isOutgoing {
+                        sendStatusIndicator
+                    }
                 }
             }
 
             if !message.isOutgoing { Spacer(minLength: 50) }
+        }
+    }
+
+    /// 气泡背景色（根据发送状态变化）
+    private var bubbleBackgroundColor: Color {
+        if message.sendStatus == .failed {
+            return Color.red.opacity(0.2)
+        } else if message.sendStatus == .sending {
+            return Color.accentColor.opacity(0.6)
+        } else {
+            return message.isOutgoing ? Color.accentColor : Color(.systemGray5)
+        }
+    }
+
+    /// 发送状态指示器
+    @ViewBuilder
+    private var sendStatusIndicator: some View {
+        switch message.sendStatus {
+        case .sending:
+            ProgressView()
+                .scaleEffect(0.5)
+        case .sent:
+            Image(systemName: "checkmark")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        case .failed:
+            Image(systemName: "exclamationmark.circle.fill")
+                .font(.caption2)
+                .foregroundStyle(.red)
         }
     }
 

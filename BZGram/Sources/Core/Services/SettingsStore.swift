@@ -4,6 +4,7 @@ import Combine
 #endif
 
 /// Persists and loads `AppSettings` to/from `UserDefaults`.
+@MainActor
 public final class SettingsStore {
 
     public var settings: AppSettings {

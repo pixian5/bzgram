@@ -211,6 +211,7 @@ final class ServiceTests: XCTestCase {
 
     // MARK: - SettingsStore
 
+    @MainActor
     func testSettingsStore_persistence() {
         let store = UserDefaults(suiteName: "test.\(UUID())")!
         defer { store.dictionaryRepresentation().keys.forEach { store.removeObject(forKey: $0) } }

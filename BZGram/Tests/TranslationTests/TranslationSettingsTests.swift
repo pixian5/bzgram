@@ -1,6 +1,7 @@
 import XCTest
 @testable import BZGramCore
 
+@MainActor
 final class TranslationSettingsTests: XCTestCase {
 
     // MARK: - TranslationSettings 模型
