@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 import BZGramCore
 
 /// 对话详情视图（消息收发 + 翻译 + 编辑 + 长按菜单）
@@ -7,6 +8,7 @@ public struct ChatView: View {
     @ObservedObject var viewModel: ChatViewModel
     @ObservedObject var chatListViewModel: ChatListViewModel
     @State private var showTranslationSettings = false
+    @State private var selectedPhoto: PhotosPickerItem? = nil
     @Environment(\.colorScheme) private var colorScheme
 
     public init(viewModel: ChatViewModel, chatListViewModel: ChatListViewModel) {
@@ -186,6 +188,15 @@ public struct ChatView: View {
 
     private var composer: some View {
         HStack(spacing: 10) {
+            PhotosPicker(selection: $selectedPhoto, matching: .images) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+            }
+            .onChange(of: selectedPhoto) { _ in
+                // TODO: 之后实现图片发送逻辑
+            }
+
             TextField(viewModel.isEditing ? "编辑消息…" : "发送消息…",
                       text: $viewModel.draftMessage,
                       axis: .vertical)
@@ -254,10 +265,33 @@ private struct MessageBubbleView: View {
                                 .font(.caption)
                         }
                         .foregroundStyle(.secondary)
+
+                        // 媒体占位视图
+                        if message.contentType == .photo || message.contentType == .video {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(height: 150)
+                                .cornerRadius(8)
+                                .overlay(
+                                    Image(systemName: contentTypeIcon)
+                                        .font(.largeTitle)
+                                        .foregroundStyle(.white)
+                                )
+                        } else if message.contentType == .voice {
+                            HStack {
+                                Image(systemName: "play.circle.fill")
+                                    .font(.title)
+                                Image(systemName: "waveform")
+                                    .imageScale(.large)
+                            }
+                            .padding(.vertical, 4)
+                        }
                     }
 
-                    Text(displayText)
-                        .font(.body)
+                    if !displayText.isEmpty {
+                        Text(displayText)
+                            .font(.body)
+                    }
 
                     if showOriginal {
                         Divider()

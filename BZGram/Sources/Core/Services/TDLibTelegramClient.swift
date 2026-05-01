@@ -170,6 +170,31 @@ public actor TDLibTelegramClient: TelegramClient {
         return mapped.sorted { $0.date < $1.date }
     }
 
+    public func searchMessages(query: String, in chatID: Int64, limit: Int) async throws -> [Message] {
+        try await ensureAuthorized()
+
+        let results = try await client.searchChatMessages(
+            chatId: chatID,
+            filter: nil,
+            fromMessageId: 0,
+            limit: limit,
+            offset: 0,
+            query: query,
+            senderId: nil,
+            topicId: nil
+        )
+
+        let tdMessages = results.messages ?? []
+        var mapped: [Message] = []
+        mapped.reserveCapacity(tdMessages.count)
+        for tdMessage in tdMessages {
+            if let message = try await map(message: tdMessage) {
+                mapped.append(message)
+            }
+        }
+        return mapped
+    }
+
     public func sendMessage(_ text: String, to chatID: Int64) async throws -> Message {
         try await ensureAuthorized()
 
