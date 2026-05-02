@@ -219,6 +219,87 @@ public actor TDLibTelegramClient: TelegramClient {
         return message
     }
 
+    public func sendPhoto(filePath: String, caption: String, to chatID: Int64) async throws -> Message {
+        try await ensureAuthorized()
+        let sent = try await client.sendMessage(
+            chatId: chatID,
+            inputMessageContent: .inputMessagePhoto(
+                InputMessagePhoto(
+                    addedStickerFileIds: [],
+                    caption: FormattedText(entities: [], text: caption),
+                    hasSpoiler: false,
+                    height: 0,
+                    photo: .inputFileLocal(InputFileLocal(path: filePath)),
+                    selfDestructType: nil,
+                    showCaptionAboveMedia: false,
+                    thumbnail: nil,
+                    video: nil,
+                    width: 0
+                )
+            ),
+            options: nil,
+            replyMarkup: nil,
+            replyTo: nil,
+            topicId: nil
+        )
+        guard let message = try await map(message: sent) else {
+            throw TelegramClientError.chatNotFound
+        }
+        return message
+    }
+
+    public func sendVideo(filePath: String, caption: String, to chatID: Int64) async throws -> Message {
+        try await ensureAuthorized()
+        let sent = try await client.sendMessage(
+            chatId: chatID,
+            inputMessageContent: .inputMessageVideo(
+                InputMessageVideo(
+                    addedStickerFileIds: [],
+                    caption: FormattedText(entities: [], text: caption),
+                    cover: nil,
+                    duration: 0,
+                    hasSpoiler: false,
+                    height: 0,
+                    selfDestructType: nil,
+                    showCaptionAboveMedia: false,
+                    startTimestamp: 0,
+                    supportsStreaming: false,
+                    thumbnail: nil,
+                    video: .inputFileLocal(InputFileLocal(path: filePath)),
+                    width: 0
+                )
+            ),
+            options: nil,
+            replyMarkup: nil,
+            replyTo: nil,
+            topicId: nil
+        )
+        guard let message = try await map(message: sent) else {
+            throw TelegramClientError.chatNotFound
+        }
+        return message
+    }
+
+    public func viewMessages(chatID: Int64, messageIDs: [Int64], forceRead: Bool) async throws {
+        try await ensureAuthorized()
+        _ = try await client.viewMessages(chatId: chatID, forceRead: forceRead, messageIds: messageIDs, source: nil)
+    }
+
+    public func sendTypingAction(chatID: Int64, action: String) async throws {
+        try await ensureAuthorized()
+        let chatAction: ChatAction
+        if action == "typing" {
+            chatAction = .chatActionTyping
+        } else if action == "upload_photo" {
+            chatAction = .chatActionUploadingPhoto(ChatActionUploadingPhoto(progress: 0))
+        } else if action == "upload_video" {
+            chatAction = .chatActionUploadingVideo(ChatActionUploadingVideo(progress: 0))
+        } else {
+            chatAction = .chatActionTyping
+        }
+        _ = try await client.sendChatAction(action: chatAction, businessConnectionId: nil, chatId: chatID, topicId: nil)
+    }
+
     private func ensureInitialized() async throws {
         switch currentTDLibState {
         case .authorizationStateWaitTdlibParameters:

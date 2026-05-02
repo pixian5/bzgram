@@ -136,6 +136,66 @@ public final class TelegramSessionStore: ObservableObject {
         }
     }
 
+    public func sendPhoto(filePath: String, caption: String, to chatID: Int64) async {
+        let pendingID = -Int64(Date().timeIntervalSince1970 * 1000)
+        let pendingMessage = Message(
+            id: pendingID,
+            chatID: chatID,
+            senderName: currentUser?.displayName ?? "Me",
+            originalText: caption,
+            date: Date(),
+            isOutgoing: true,
+            contentType: .photo,
+            canBeEdited: true,
+            sendStatus: .sending
+        )
+        messagesByChatID[chatID, default: []].append(pendingMessage)
+
+        do {
+            let sent = try await client.sendPhoto(filePath: filePath, caption: caption, to: chatID)
+            if let index = messagesByChatID[chatID]?.firstIndex(where: { $0.id == pendingID }) {
+                messagesByChatID[chatID]?[index] = sent
+            }
+            chats = try await client.fetchChats()
+            sortChats()
+        } catch {
+            if let index = messagesByChatID[chatID]?.firstIndex(where: { $0.id == pendingID }) {
+                messagesByChatID[chatID]?[index].sendStatus = .failed
+            }
+            lastErrorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
+    }
+
+    public func sendVideo(filePath: String, caption: String, to chatID: Int64) async {
+        let pendingID = -Int64(Date().timeIntervalSince1970 * 1000)
+        let pendingMessage = Message(
+            id: pendingID,
+            chatID: chatID,
+            senderName: currentUser?.displayName ?? "Me",
+            originalText: caption,
+            date: Date(),
+            isOutgoing: true,
+            contentType: .video,
+            canBeEdited: true,
+            sendStatus: .sending
+        )
+        messagesByChatID[chatID, default: []].append(pendingMessage)
+
+        do {
+            let sent = try await client.sendVideo(filePath: filePath, caption: caption, to: chatID)
+            if let index = messagesByChatID[chatID]?.firstIndex(where: { $0.id == pendingID }) {
+                messagesByChatID[chatID]?[index] = sent
+            }
+            chats = try await client.fetchChats()
+            sortChats()
+        } catch {
+            if let index = messagesByChatID[chatID]?.firstIndex(where: { $0.id == pendingID }) {
+                messagesByChatID[chatID]?[index].sendStatus = .failed
+            }
+            lastErrorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
+    }
+
     /// 重试发送失败的消息
     public func retryMessage(_ message: Message) async {
         // 移除失败的占位消息
@@ -175,6 +235,25 @@ public final class TelegramSessionStore: ObservableObject {
             if let index = self.chats.firstIndex(where: { $0.id == chatID }) {
                 self.chats[index].unreadCount = 0
             }
+        }
+    }
+
+    public func viewMessages(chatID: Int64, messageIDs: [Int64], forceRead: Bool = true) async {
+        guard !messageIDs.isEmpty else { return }
+        await perform { [self] in
+            try await self.client.viewMessages(chatID: chatID, messageIDs: messageIDs, forceRead: forceRead)
+            if forceRead {
+                if let index = self.chats.firstIndex(where: { $0.id == chatID }) {
+                    // This is a naive way to clear unread, ideally TDLib pushes unread count updates.
+                    self.chats[index].unreadCount = 0
+                }
+            }
+        }
+    }
+
+    public func sendTypingAction(chatID: Int64, action: String) async {
+        await perform { [self] in
+            try await self.client.sendTypingAction(chatID: chatID, action: action)
         }
     }
 

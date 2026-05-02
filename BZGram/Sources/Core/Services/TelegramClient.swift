@@ -65,11 +65,15 @@ public protocol TelegramClient: Sendable {
     func fetchChats() async throws -> [Chat]
     func fetchMessages(in chatID: Int64) async throws -> [Message]
     func sendMessage(_ text: String, to chatID: Int64) async throws -> Message
+    func sendPhoto(filePath: String, caption: String, to chatID: Int64) async throws -> Message
+    func sendVideo(filePath: String, caption: String, to chatID: Int64) async throws -> Message
 
     // MARK: - 增强操作
     func editMessage(messageID: Int64, in chatID: Int64, newText: String) async throws
     func deleteMessages(messageIDs: [Int64], in chatID: Int64) async throws
     func markChatAsRead(chatID: Int64) async throws
+    func viewMessages(chatID: Int64, messageIDs: [Int64], forceRead: Bool) async throws
+    func sendTypingAction(chatID: Int64, action: String) async throws
 
     // MARK: - 搜索（委托给 TDLib 服务端分页过滤，避免内存中遍历全量消息）
     func searchMessages(query: String, in chatID: Int64, limit: Int) async throws -> [Message]
@@ -87,6 +91,10 @@ public extension TelegramClient {
     func editMessage(messageID: Int64, in chatID: Int64, newText: String) async throws {}
     func deleteMessages(messageIDs: [Int64], in chatID: Int64) async throws {}
     func markChatAsRead(chatID: Int64) async throws {}
+    func viewMessages(chatID: Int64, messageIDs: [Int64], forceRead: Bool) async throws {}
+    func sendTypingAction(chatID: Int64, action: String) async throws {}
+    func sendPhoto(filePath: String, caption: String, to chatID: Int64) async throws -> Message { throw TelegramClientError.unknown("Not implemented") }
+    func sendVideo(filePath: String, caption: String, to chatID: Int64) async throws -> Message { throw TelegramClientError.unknown("Not implemented") }
     func searchMessages(query: String, in chatID: Int64, limit: Int) async throws -> [Message] { [] }
     func fetchContacts() async throws -> [Contact] { [] }
     func downloadFile(remoteFileId: String) async throws -> String { "" }

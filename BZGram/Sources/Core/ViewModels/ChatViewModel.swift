@@ -65,6 +65,15 @@ public final class ChatViewModel: ObservableObject {
         }
     }
 
+    public func sendPhoto(filePath: String) async {
+        errorMessage = nil
+        await sessionStore.sendPhoto(filePath: filePath, caption: "", to: chat.id)
+        messages = sessionStore.messages(for: chat.id)
+        if let err = sessionStore.lastErrorMessage {
+            errorMessage = err
+        }
+    }
+
     /// 重试发送失败的消息
     public func retryMessage(_ message: Message) async {
         errorMessage = nil
