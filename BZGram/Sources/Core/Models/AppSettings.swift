@@ -25,6 +25,8 @@ public struct AppSettings: Codable, Equatable {
     public var ghostMode: Bool
     /// 防撤回模式（本地保留被撤回的消息）
     public var antiDelete: Bool
+    /// 聊天摘要的目标语言；为 `nil` 时跟随系统语言
+    public var summaryLanguageCode: String?
 
     public init(
         globalTranslation: TranslationSettings = .disabled,
@@ -34,7 +36,8 @@ public struct AppSettings: Codable, Equatable {
         sendMessageSound: Bool = true,
         fontScale: Double = 1.0,
         ghostMode: Bool = false,
-        antiDelete: Bool = false
+        antiDelete: Bool = false,
+        summaryLanguageCode: String? = nil
     ) {
         self.globalTranslation = globalTranslation
         self.activeAccountID = activeAccountID
@@ -44,5 +47,6 @@ public struct AppSettings: Codable, Equatable {
         self.fontScale = fontScale
         self.ghostMode = ghostMode
         self.antiDelete = antiDelete
+        self.summaryLanguageCode = summaryLanguageCode
     }
 }

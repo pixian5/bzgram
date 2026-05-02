@@ -84,4 +84,8 @@ public struct Chat: Identifiable, Codable, Equatable {
         case .channel:    return "red"
         }
     }
+
+    public var isGroupLike: Bool {
+        type == .group || type == .supergroup
+    }
 }

@@ -15,22 +15,27 @@ public final class ChatViewModel: ObservableObject {
     @Published public var searchQuery: String = ""
     @Published public var isSearching: Bool = false
     @Published public var errorMessage: String?
+    @Published public var summaryText: String?
+    @Published public var isSummarizing: Bool = false
 
     public let chat: Chat
     private let settingsStore: SettingsStore
     private let translationService: TranslationService
     private let sessionStore: TelegramSessionStore
+    private let summaryService: ChatSummaryService
 
     public init(
         chat: Chat,
         settingsStore: SettingsStore,
         sessionStore: TelegramSessionStore,
-        translationService: TranslationService = .shared
+        translationService: TranslationService = .shared,
+        summaryService: ChatSummaryService = .shared
     ) {
         self.chat = chat
         self.settingsStore = settingsStore
         self.sessionStore = sessionStore
         self.translationService = translationService
+        self.summaryService = summaryService
     }
 
     /// 加载消息并翻译
@@ -162,6 +167,32 @@ public final class ChatViewModel: ObservableObject {
     public var hasFailedMessages: Bool {
         messages.contains { $0.sendStatus == .failed }
     }
+
+    public func generateSummary() async {
+        isSummarizing = true
+        defer { isSummarizing = false }
+
+        let summary = summaryService.summarize(messages: messages, chatTitle: chat.title)
+        if let language = settingsStore.settings.summaryLanguageCode,
+           language != "zh-Hans" {
+            let translatedHeadline = await translationService.translate(summary.headline, to: language, from: "zh-Hans")
+            var translatedBullets: [String] = []
+            for bullet in summary.bullets {
+                translatedBullets.append(await translationService.translate(bullet, to: language, from: "zh-Hans"))
+            }
+            var translatedHighlights: [String] = []
+            for highlight in summary.highlights {
+                translatedHighlights.append(await translationService.translate(highlight, to: language, from: "zh-Hans"))
+            }
+            summaryText = ChatSummary(
+                headline: translatedHeadline,
+                bullets: translatedBullets,
+                highlights: translatedHighlights
+            ).formattedText
+        } else {
+            summaryText = summary.formattedText
+        }
+    }
 }
 #else
 @MainActor
@@ -173,22 +204,27 @@ public final class ChatViewModel {
     public var editingMessage: Message?
     public var replyToMessage: Message?
     public var errorMessage: String?
+    public var summaryText: String?
+    public var isSummarizing: Bool = false
 
     public let chat: Chat
     private let settingsStore: SettingsStore
     private let translationService: TranslationService
     private let sessionStore: TelegramSessionStore
+    private let summaryService: ChatSummaryService
 
     public init(
         chat: Chat,
         settingsStore: SettingsStore,
         sessionStore: TelegramSessionStore,
-        translationService: TranslationService = .shared
+        translationService: TranslationService = .shared,
+        summaryService: ChatSummaryService = .shared
     ) {
         self.chat = chat
         self.settingsStore = settingsStore
         self.sessionStore = sessionStore
         self.translationService = translationService
+        self.summaryService = summaryService
     }
 
     public func loadMessages() async {
@@ -223,6 +259,12 @@ public final class ChatViewModel {
 
     public var hasFailedMessages: Bool {
         messages.contains { $0.sendStatus == .failed }
+    }
+
+    public func generateSummary() async {
+        isSummarizing = true
+        defer { isSummarizing = false }
+        summaryText = summaryService.summarize(messages: messages, chatTitle: chat.title).formattedText
     }
 }
 #endif

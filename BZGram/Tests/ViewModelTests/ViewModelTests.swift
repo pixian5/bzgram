@@ -173,6 +173,34 @@ final class ViewModelTests: XCTestCase {
         XCTAssertNil(vm.chats[0].translationOverride)
     }
 
+    func testChatListVM_advancedFilters() {
+        let store = SettingsStore(store: UserDefaults(suiteName: "test.\(UUID())")!)
+        store.settings.globalTranslation = .autoTranslate(to: "en")
+        let manager = AccountManager(
+            keychain: .shared,
+            legacyStore: UserDefaults(suiteName: "test.\(UUID())")!
+        )
+        let session = TelegramSessionStore(client: MockTelegramClient(), accountManager: manager)
+        let vm = ChatListViewModel(settingsStore: store, sessionStore: session)
+
+        vm.chats = [
+            Chat(id: 1, title: "Pinned", isPinned: true),
+            Chat(id: 2, title: "Muted", isMuted: true),
+            Chat(id: 3, title: "Translated", translationOverride: .autoTranslate(to: "ja"))
+        ]
+
+        vm.showPinnedOnly = true
+        XCTAssertEqual(vm.filteredChats.map(\.title), ["Pinned"])
+
+        vm.showPinnedOnly = false
+        vm.showMutedOnly = true
+        XCTAssertEqual(vm.filteredChats.map(\.title), ["Muted"])
+
+        vm.showMutedOnly = false
+        vm.showTranslatedOnly = true
+        XCTAssertEqual(vm.filteredChats.count, 3)
+    }
+
     // MARK: - ContactListViewModel（DI 统一，必须注入 ContactService）
 
     func testContactListVM_groupedContacts() {
@@ -249,5 +277,22 @@ final class ViewModelTests: XCTestCase {
         ]
 
         XCTAssertFalse(vm.hasFailedMessages)
+    }
+
+    func testChatVM_generateSummary() async {
+        let store = SettingsStore(store: UserDefaults(suiteName: "test.\(UUID())")!)
+        let manager = AccountManager(keychain: .shared, legacyStore: UserDefaults(suiteName: "test.\(UUID())")!)
+        let session = TelegramSessionStore(client: MockTelegramClient(), accountManager: manager)
+        let chat = Chat(id: 1, title: "Test")
+        let vm = ChatViewModel(chat: chat, settingsStore: store, sessionStore: session)
+
+        vm.messages = [
+            Message(id: 1, chatID: 1, senderName: "A", originalText: "今天把构建修好。"),
+            Message(id: 2, chatID: 1, senderName: "B", originalText: "明天再 review 一次？")
+        ]
+
+        await vm.generateSummary()
+        XCTAssertNotNil(vm.summaryText)
+        XCTAssertTrue(vm.summaryText?.contains("Test") ?? false)
     }
 }

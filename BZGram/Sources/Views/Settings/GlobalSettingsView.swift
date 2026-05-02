@@ -9,28 +9,7 @@ public struct GlobalSettingsView: View {
     @State private var showPrivacyPolicy = false
     @State private var showTermsOfService = false
 
-    private let supportedLanguages: [(code: String, name: String)] = [
-        ("en", "English"),
-        ("zh-Hans", "简体中文"),
-        ("zh-Hant", "繁體中文"),
-        ("es", "Español"),
-        ("fr", "Français"),
-        ("de", "Deutsch"),
-        ("ja", "日本語"),
-        ("ko", "한국어"),
-        ("ru", "Русский"),
-        ("ar", "العربية"),
-        ("pt", "Português"),
-        ("it", "Italiano"),
-        ("nl", "Nederlands"),
-        ("tr", "Türkçe"),
-        ("vi", "Tiếng Việt"),
-        ("th", "ไทย"),
-        ("pl", "Polski"),
-        ("hi", "हिन्दी"),
-        ("id", "Bahasa Indonesia"),
-        ("uk", "Українська")
-    ]
+    private let supportedLanguages = TranslationService.supportedLanguages
 
     public init() {}
 
@@ -114,6 +93,24 @@ public struct GlobalSettingsView: View {
                     Text("翻译")
                 } footer: {
                     Text("全局设置对所有对话生效。你可以在对话内通过地球图标覆盖单个对话的翻译设置。")
+                }
+
+                Section {
+                    Picker(
+                        "摘要输出语言",
+                        selection: Binding(
+                            get: { settingsStore.settings.summaryLanguageCode ?? "zh-Hans" },
+                            set: { settingsStore.settings.summaryLanguageCode = $0 }
+                        )
+                    ) {
+                        ForEach(supportedLanguages, id: \.code) { lang in
+                            Text(lang.name).tag(lang.code)
+                        }
+                    }
+                } header: {
+                    Text("摘要")
+                } footer: {
+                    Text("聊天摘要默认使用中文生成，再按这里的设置尝试翻译输出。")
                 }
 
                 // MARK: 高级特权

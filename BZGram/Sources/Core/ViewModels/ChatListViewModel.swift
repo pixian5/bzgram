@@ -10,6 +10,9 @@ public final class ChatListViewModel: ObservableObject {
     @Published public var isLoading: Bool = false
     @Published public var searchQuery: String = ""
     @Published public var selectedFilter: ChatFilter = .all
+    @Published public var showTranslatedOnly: Bool = false
+    @Published public var showMutedOnly: Bool = false
+    @Published public var showPinnedOnly: Bool = false
 
     private let settingsStore: SettingsStore
     private let sessionStore: TelegramSessionStore
@@ -20,6 +23,9 @@ public final class ChatListViewModel: ObservableObject {
         case groups = "群组"
         case channels = "频道"
         case `private` = "私聊"
+        case pinned = "置顶"
+        case muted = "静音"
+        case translated = "翻译中"
     }
 
     public init(settingsStore: SettingsStore, sessionStore: TelegramSessionStore) {
@@ -47,6 +53,24 @@ public final class ChatListViewModel: ObservableObject {
         case .groups: result = result.filter { $0.type == .group || $0.type == .supergroup }
         case .channels: result = result.filter { $0.type == .channel }
         case .private: result = result.filter { $0.type == .private }
+        case .pinned: result = result.filter(\.isPinned)
+        case .muted: result = result.filter(\.isMuted)
+        case .translated:
+            result = result.filter {
+                $0.effectiveTranslation(globalSettings: settingsStore.settings.globalTranslation).autoTranslateEnabled
+            }
+        }
+
+        if showTranslatedOnly {
+            result = result.filter {
+                $0.effectiveTranslation(globalSettings: settingsStore.settings.globalTranslation).autoTranslateEnabled
+            }
+        }
+        if showMutedOnly {
+            result = result.filter(\.isMuted)
+        }
+        if showPinnedOnly {
+            result = result.filter(\.isPinned)
         }
 
         return result

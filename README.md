@@ -5,7 +5,8 @@
 ## 功能特性
 
 - 🔐 **无限多账号**：支持无限数量的 Telegram 账号同时登录和一键切换
-- 🌐 **自动翻译**：全局翻译设置 + 单聊覆盖，内置翻译缓存
+- 🌐 **自动翻译**：全局翻译设置 + 单聊覆盖，优先使用系统 Translation 框架并带本地回退
+- 📝 **聊天摘要**：在聊天页一键生成最近讨论摘要
 - 💬 **完整聊天**：消息收发、编辑、撤回、回复、搜索
 - 📱 **联系人管理**：在线状态、按首字母分组
 - 🎨 **暗黑模式**：支持系统/浅色/深色三种外观模式
@@ -101,10 +102,13 @@ bundle exec fastlane ios build
 - **多 TDLib 实例**：每个账号拥有独立的 TDLib 数据目录
 - **Keychain 安全存储**：敏感数据使用 iOS Keychain 加密
 - **翻译缓存**：UserDefaults 持久化，最大 5000 条缓存
+- **聊天摘要**：基于最近消息的本地摘要服务，可配合翻译输出到目标语言
 
 ## 常规运行方式
 
 如果 Xcode 项目文件缺失，运行 `xcodegen generate` 生成。CI 构建使用模拟器（无需签名证书）。
+
+如果 `xcodebuild` 提示 `iOS 26.4 is not installed` 或 `Unable to find a destination matching the provided destination specifier`，说明当前 Xcode 缺少对应的 iOS 平台/模拟器组件。请先到 `Xcode > Settings > Components` 安装 `iOS 26.4`，再运行 `BZGram` App 目标；否则只能先运行 `swift test` 验证 Core 层。
 
 ## 许可
 

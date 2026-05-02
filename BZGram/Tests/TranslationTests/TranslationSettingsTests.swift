@@ -61,10 +61,10 @@ final class TranslationSettingsTests: XCTestCase {
 
     // MARK: - TranslationService
 
-    func testTranslationService_stubReturnsOriginal() async {
+    func testTranslationService_phrasebookFallbackTranslates() async {
         let service = TranslationService.shared
         let result = await service.translate("Hola", to: "en")
-        XCTAssertEqual(result, "Hola")
+        XCTAssertEqual(result, "Hello")
     }
 
     func testTranslationService_disabledReturnsInputUnchanged() async {
@@ -113,10 +113,24 @@ final class TranslationSettingsTests: XCTestCase {
         let original = AppSettings(
             globalTranslation: .autoTranslate(to: "en"),
             appearanceMode: .dark,
-            fontScale: 1.2
+            fontScale: 1.2,
+            summaryLanguageCode: "ja"
         )
         let data = try JSONEncoder().encode(original)
         let decoded = try JSONDecoder().decode(AppSettings.self, from: data)
         XCTAssertEqual(original, decoded)
+    }
+
+    func testSummaryService_generatesDigest() {
+        let messages = [
+            Message(id: 1, chatID: 1, senderName: "Alice", originalText: "今天需要把登录页修好。"),
+            Message(id: 2, chatID: 1, senderName: "Bob", originalText: "明天上午再一起 review 一遍？"),
+            Message(id: 3, chatID: 1, senderName: "Alice", originalText: "可以，我先把构建问题处理掉。")
+        ]
+
+        let summary = ChatSummaryService.shared.summarize(messages: messages, chatTitle: "产品团队")
+        XCTAssertTrue(summary.headline.contains("产品团队"))
+        XCTAssertFalse(summary.bullets.isEmpty)
+        XCTAssertFalse(summary.formattedText.isEmpty)
     }
 }

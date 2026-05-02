@@ -8,6 +8,7 @@ public struct ChatView: View {
     @ObservedObject var viewModel: ChatViewModel
     @ObservedObject var chatListViewModel: ChatListViewModel
     @State private var showTranslationSettings = false
+    @State private var showSummarySheet = false
     @State private var selectedPhoto: PhotosPickerItem? = nil
     @Environment(\.colorScheme) private var colorScheme
 
@@ -51,6 +52,12 @@ public struct ChatView: View {
                               ? "globe.badge.chevron.backward"
                               : "globe")
                     }
+                    Button {
+                        showSummarySheet = true
+                        Task { await viewModel.generateSummary() }
+                    } label: {
+                        Image(systemName: "text.quote")
+                    }
                 }
             }
         }
@@ -59,6 +66,25 @@ public struct ChatView: View {
                 chat: viewModel.chat,
                 chatListViewModel: chatListViewModel
             )
+        }
+        .sheet(isPresented: $showSummarySheet) {
+            NavigationStack {
+                Group {
+                    if viewModel.isSummarizing && (viewModel.summaryText?.isEmpty ?? true) {
+                        ProgressView("生成摘要中…")
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else {
+                        ScrollView {
+                            Text(viewModel.summaryText ?? "暂无摘要")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding()
+                        }
+                    }
+                }
+                .navigationTitle("聊天摘要")
+                .navigationBarTitleDisplayMode(.inline)
+            }
+            .presentationDetents([.medium, .large])
         }
         .task { await viewModel.loadMessages() }
     }

@@ -30,6 +30,9 @@ public struct ChatListView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     filterMenu
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    advancedFilterMenu
+                }
             }
             .task {
                 guard let account = accountManager.activeAccount else { return }
@@ -61,6 +64,22 @@ public struct ChatListView: View {
             }
         } label: {
             Image(systemName: "line.3.horizontal.decrease.circle")
+        }
+    }
+
+    private var advancedFilterMenu: some View {
+        Menu {
+            Toggle(isOn: $viewModel.showTranslatedOnly) {
+                Label("只看翻译中的聊天", systemImage: "globe")
+            }
+            Toggle(isOn: $viewModel.showPinnedOnly) {
+                Label("只看置顶聊天", systemImage: "pin")
+            }
+            Toggle(isOn: $viewModel.showMutedOnly) {
+                Label("只看静音聊天", systemImage: "bell.slash")
+            }
+        } label: {
+            Image(systemName: "slider.horizontal.3")
         }
     }
 
