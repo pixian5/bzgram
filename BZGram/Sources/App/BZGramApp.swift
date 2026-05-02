@@ -39,6 +39,10 @@ public struct BZGramApp: App {
         setupGlobalExceptionHandler()
     }
 
+    /// 应用锁定状态
+    @State private var isUnlocked = false
+    @Environment(\.scenePhase) private var scenePhase
+
     public var body: some Scene {
         WindowGroup {
             ZStack {
@@ -51,6 +55,12 @@ public struct BZGramApp: App {
                         settingsStore.settings.appearanceMode == .system ? nil :
                         settingsStore.settings.appearanceMode == .dark ? .dark : .light
                     )
+                    .blur(radius: (settingsStore.settings.appLock && !isUnlocked) ? 10 : 0)
+
+                if settingsStore.settings.appLock && !isUnlocked {
+                    AppLockView(isUnlocked: $isUnlocked)
+                        .transition(.opacity)
+                }
 
                 // 全局 Toast
                 if let toast = sessionStore.toastMessage {
@@ -61,6 +71,11 @@ public struct BZGramApp: App {
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                             .animation(.spring(response: 0.3), value: sessionStore.toastMessage)
                     }
+                }
+            }
+            .onChange(of: scenePhase) { newPhase in
+                if newPhase == .background && settingsStore.settings.appLock {
+                    isUnlocked = false
                 }
             }
         }

@@ -115,6 +115,16 @@ public final class ChatViewModel: ObservableObject {
         messages.removeAll { $0.id == message.id }
     }
 
+    /// 置顶消息
+    public func pinMessage(_ message: Message) async {
+        await sessionStore.pinMessage(messageID: message.id, in: chat.id)
+    }
+
+    /// 取消置顶消息
+    public func unpinMessage(_ message: Message) async {
+        await sessionStore.unpinMessage(messageID: message.id, in: chat.id)
+    }
+
     /// 上报阅读状态（受幽灵模式控制）
     public func markMessagesAsRead(messageIDs: [Int64]) async {
         guard !settingsStore.settings.ghostMode else { return }

@@ -129,10 +129,17 @@ public struct GlobalSettingsView: View {
                             set: { settingsStore.settings.antiDelete = $0 }
                         )
                     )
+                    Toggle(
+                        "启动密码锁 (FaceID/TouchID)",
+                        isOn: Binding(
+                            get: { settingsStore.settings.appLock },
+                            set: { settingsStore.settings.appLock = $0 }
+                        )
+                    )
                 } header: {
-                    Text("高级特权")
+                    Text("安全与高级特权")
                 } footer: {
-                    Text("幽灵模式将隐藏你的“正在输入”状态并停止发送已读回执；防撤回模式会在本地保留对方已撤回/删除的消息。")
+                    Text("幽灵模式将隐藏你的“正在输入”状态并停止发送已读回执；防撤回模式会在本地保留对方已撤回/删除的消息。密码锁将在下次启动时生效。")
                 }
 
                 // MARK: 通知

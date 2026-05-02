@@ -257,6 +257,20 @@ public final class TelegramSessionStore: ObservableObject {
         }
     }
 
+    public func pinMessage(messageID: Int64, in chatID: Int64) async {
+        await perform { [self] in
+            try await self.client.pinMessage(messageID: messageID, in: chatID)
+            self.showToast("消息已置顶")
+        }
+    }
+
+    public func unpinMessage(messageID: Int64, in chatID: Int64) async {
+        await perform { [self] in
+            try await self.client.unpinMessage(messageID: messageID, in: chatID)
+            self.showToast("消息已取消置顶")
+        }
+    }
+
     /// 置顶/取消置顶会话
     public func togglePin(for chatID: Int64) async {
         if let index = chats.firstIndex(where: { $0.id == chatID }) {

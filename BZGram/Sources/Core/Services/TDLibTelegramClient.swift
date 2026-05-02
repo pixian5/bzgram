@@ -300,6 +300,16 @@ public actor TDLibTelegramClient: TelegramClient {
         _ = try await client.sendChatAction(action: chatAction, businessConnectionId: nil, chatId: chatID, topicId: nil)
     }
 
+    public func pinMessage(messageID: Int64, in chatID: Int64) async throws {
+        try await ensureAuthorized()
+        _ = try await client.pinChatMessage(chatId: chatID, disableNotification: false, messageId: messageID, onlyForSelf: false)
+    }
+
+    public func unpinMessage(messageID: Int64, in chatID: Int64) async throws {
+        try await ensureAuthorized()
+        _ = try await client.unpinChatMessage(chatId: chatID, messageId: messageID)
+    }
+
     private func ensureInitialized() async throws {
         switch currentTDLibState {
         case .authorizationStateWaitTdlibParameters:

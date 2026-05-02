@@ -27,6 +27,8 @@ public struct AppSettings: Codable, Equatable {
     public var antiDelete: Bool
     /// 聊天摘要的目标语言；为 `nil` 时跟随系统语言
     public var summaryLanguageCode: String?
+    /// 本地独立密码锁（生物识别）
+    public var appLock: Bool
 
     public init(
         globalTranslation: TranslationSettings = .disabled,
@@ -37,7 +39,8 @@ public struct AppSettings: Codable, Equatable {
         fontScale: Double = 1.0,
         ghostMode: Bool = false,
         antiDelete: Bool = false,
-        summaryLanguageCode: String? = nil
+        summaryLanguageCode: String? = nil,
+        appLock: Bool = false
     ) {
         self.globalTranslation = globalTranslation
         self.activeAccountID = activeAccountID
@@ -48,5 +51,6 @@ public struct AppSettings: Codable, Equatable {
         self.ghostMode = ghostMode
         self.antiDelete = antiDelete
         self.summaryLanguageCode = summaryLanguageCode
+        self.appLock = appLock
     }
 }
