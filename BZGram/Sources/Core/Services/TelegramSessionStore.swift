@@ -320,6 +320,14 @@ public final class TelegramSessionStore: ObservableObject {
         isBusy = false
     }
 
+    private var antiDeleteEnabled: Bool {
+        guard let data = UserDefaults.standard.data(forKey: "bzgram.appSettings"),
+              let settings = try? JSONDecoder().decode(AppSettings.self, from: data) else {
+            return false
+        }
+        return settings.antiDelete
+    }
+
     /// 排序聊天列表：置顶优先 → 最近消息时间倒序
     private func sortChats() {
         chats.sort { lhs, rhs in
@@ -398,9 +406,10 @@ extension TelegramSessionStore: TelegramUpdateDelegate {
             if let index = self.messagesByChatID[chatID]?.firstIndex(where: { $0.id == messageID }) {
                 // Message 是 struct，需要重新构造（只改 originalText 和 isEdited）
                 var msg = self.messagesByChatID[chatID]![index]
+                let textToSave = self.antiDeleteEnabled ? "\(msg.originalText)\n\n[新版本]\n\(newText)" : newText
                 msg = Message(
                     id: msg.id, chatID: msg.chatID, senderName: msg.senderName,
-                    senderUserID: msg.senderUserID, originalText: newText,
+                    senderUserID: msg.senderUserID, originalText: textToSave,
                     translatedText: nil, date: msg.date, isOutgoing: msg.isOutgoing,
                     contentType: msg.contentType, attachment: msg.attachment,
                     isEdited: true, replyToMessageId: msg.replyToMessageId,
@@ -415,7 +424,25 @@ extension TelegramSessionStore: TelegramUpdateDelegate {
     /// 消息被删除 → 从本地列表移除
     public nonisolated func didDeleteMessages(chatID: Int64, messageIDs: [Int64]) {
         Task { @MainActor in
-            self.messagesByChatID[chatID]?.removeAll { messageIDs.contains($0.id) }
+            if self.antiDeleteEnabled {
+                for id in messageIDs {
+                    if let index = self.messagesByChatID[chatID]?.firstIndex(where: { $0.id == id }) {
+                        var msg = self.messagesByChatID[chatID]![index]
+                        msg = Message(
+                            id: msg.id, chatID: msg.chatID, senderName: msg.senderName,
+                            senderUserID: msg.senderUserID, originalText: "[被撤回] " + msg.originalText,
+                            translatedText: nil, date: msg.date, isOutgoing: msg.isOutgoing,
+                            contentType: msg.contentType, attachment: msg.attachment,
+                            isEdited: msg.isEdited, replyToMessageId: msg.replyToMessageId,
+                            canBeDeleted: msg.canBeDeleted, canBeEdited: false,
+                            sendStatus: msg.sendStatus
+                        )
+                        self.messagesByChatID[chatID]![index] = msg
+                    }
+                }
+            } else {
+                self.messagesByChatID[chatID]?.removeAll { messageIDs.contains($0.id) }
+            }
         }
     }
 }

@@ -110,6 +110,18 @@ public final class ChatViewModel: ObservableObject {
         messages.removeAll { $0.id == message.id }
     }
 
+    /// 上报阅读状态（受幽灵模式控制）
+    public func markMessagesAsRead(messageIDs: [Int64]) async {
+        guard !settingsStore.settings.ghostMode else { return }
+        await sessionStore.viewMessages(chatID: chat.id, messageIDs: messageIDs)
+    }
+
+    /// 发送正在输入状态（受幽灵模式控制）
+    public func sendTypingAction(action: String = "typing") async {
+        guard !settingsStore.settings.ghostMode else { return }
+        await sessionStore.sendTypingAction(chatID: chat.id, action: action)
+    }
+
     /// 设置回复消息
     public func setReply(to message: Message) {
         replyToMessage = message

@@ -116,6 +116,28 @@ public struct GlobalSettingsView: View {
                     Text("全局设置对所有对话生效。你可以在对话内通过地球图标覆盖单个对话的翻译设置。")
                 }
 
+                // MARK: 高级特权
+                Section {
+                    Toggle(
+                        "幽灵模式",
+                        isOn: Binding(
+                            get: { settingsStore.settings.ghostMode },
+                            set: { settingsStore.settings.ghostMode = $0 }
+                        )
+                    )
+                    Toggle(
+                        "防撤回模式",
+                        isOn: Binding(
+                            get: { settingsStore.settings.antiDelete },
+                            set: { settingsStore.settings.antiDelete = $0 }
+                        )
+                    )
+                } header: {
+                    Text("高级特权")
+                } footer: {
+                    Text("幽灵模式将隐藏你的“正在输入”状态并停止发送已读回执；防撤回模式会在本地保留对方已撤回/删除的消息。")
+                }
+
                 // MARK: 通知
                 Section("通知") {
                     Toggle("消息预览", isOn: Binding(

@@ -21,6 +21,10 @@ public struct AppSettings: Codable, Equatable {
     public var sendMessageSound: Bool
     /// 字体大小缩放倍率（1.0 = 正常）
     public var fontScale: Double
+    /// 幽灵模式（不发已读回执、不发正在输入状态）
+    public var ghostMode: Bool
+    /// 防撤回模式（本地保留被撤回的消息）
+    public var antiDelete: Bool
 
     public init(
         globalTranslation: TranslationSettings = .disabled,
@@ -28,7 +32,9 @@ public struct AppSettings: Codable, Equatable {
         appearanceMode: AppearanceMode = .system,
         notificationPreview: Bool = true,
         sendMessageSound: Bool = true,
-        fontScale: Double = 1.0
+        fontScale: Double = 1.0,
+        ghostMode: Bool = false,
+        antiDelete: Bool = false
     ) {
         self.globalTranslation = globalTranslation
         self.activeAccountID = activeAccountID
@@ -36,5 +42,7 @@ public struct AppSettings: Codable, Equatable {
         self.notificationPreview = notificationPreview
         self.sendMessageSound = sendMessageSound
         self.fontScale = fontScale
+        self.ghostMode = ghostMode
+        self.antiDelete = antiDelete
     }
 }
