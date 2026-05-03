@@ -25,7 +25,7 @@ public struct AddAccountView: View {
                         Circle()
                             .fill(
                                 LinearGradient(
-                                    colors: [.accentColor, .accentColor.opacity(0.5)],
+                                    colors: [Color.accentColor, Color.accentColor.opacity(0.5)],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 )
@@ -36,7 +36,7 @@ public struct AddAccountView: View {
                                     .font(.title.weight(.bold))
                                     .foregroundStyle(.white)
                             )
-                            .shadow(color: .accentColor.opacity(0.3), radius: 10)
+                            .shadow(color: Color.accentColor.opacity(0.3), radius: 10)
                         Spacer()
                     }
                     .listRowBackground(Color.clear)

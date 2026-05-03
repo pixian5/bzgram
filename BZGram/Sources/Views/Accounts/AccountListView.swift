@@ -64,7 +64,7 @@ public struct AccountListView: View {
         VStack(spacing: 20) {
             Image(systemName: "person.crop.circle.badge.plus")
                 .font(.system(size: 60))
-                .foregroundStyle(.accentColor.opacity(0.6))
+                .foregroundStyle(Color.accentColor.opacity(0.6))
             Text("暂无账号")
                 .font(.title3.weight(.semibold))
             Text("添加你的 Telegram 账号开始使用")
@@ -101,7 +101,7 @@ private struct AccountRowView: View {
                     .fill(
                         LinearGradient(
                             colors: isActive
-                                ? [.accentColor, .accentColor.opacity(0.6)]
+                                ? [Color.accentColor, Color.accentColor.opacity(0.6)]
                                 : [Color(.systemGray4), Color(.systemGray5)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -134,7 +134,7 @@ private struct AccountRowView: View {
                             .foregroundStyle(.white)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(.accentColor, in: Capsule())
+                            .background(Color.accentColor, in: Capsule())
                     }
                 }
                 Text(account.phoneNumber)
