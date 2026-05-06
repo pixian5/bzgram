@@ -65,7 +65,6 @@ public struct AuthenticationView: View {
                 .foregroundStyle(.secondary)
             TextField("86 138 0013 8000", text: $phoneNumber)
                 .textContentType(.telephoneNumber)
-                .keyboardType(.phonePad)
                 .textFieldStyle(.roundedBorder)
             Button {
                 Task { await sessionStore.submitPhoneNumber(phoneNumber) }
@@ -88,21 +87,31 @@ public struct AuthenticationView: View {
             Text("验证码已发送到 \(phoneNumber)，请查收。")
                 .foregroundStyle(.secondary)
             TextField("12345", text: $verificationCode)
-                .keyboardType(.numberPad)
                 .textFieldStyle(.roundedBorder)
-            Button {
-                Task { await sessionStore.submitCode(verificationCode) }
-            } label: {
-                if sessionStore.isBusy {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                } else {
-                    Text("验证")
+            HStack {
+                Button {
+                    Task { await sessionStore.submitCode(verificationCode) }
+                } label: {
+                    if sessionStore.isBusy {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                    } else {
+                        Text("验证")
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(sessionStore.isBusy || verificationCode.isEmpty)
+
+                Button {
+                    Task { await sessionStore.resendAuthenticationCode() }
+                } label: {
+                    Text("重新发送")
                         .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(.bordered)
+                .disabled(sessionStore.isBusy)
             }
-            .buttonStyle(.borderedProminent)
-            .disabled(sessionStore.isBusy)
         }
     }
 

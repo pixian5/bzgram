@@ -57,6 +57,7 @@ public protocol TelegramClient: Sendable {
     func authorizationState() async -> TelegramAuthorizationState
     func currentUser() async -> TelegramUser?
     func submitPhoneNumber(_ phoneNumber: String) async throws -> TelegramAuthorizationState
+    func resendAuthenticationCode() async throws -> TelegramAuthorizationState
     func submitCode(_ code: String) async throws -> TelegramAuthorizationState
     func submitPassword(_ password: String) async throws -> TelegramAuthorizationState
     func logOut() async -> TelegramAuthorizationState

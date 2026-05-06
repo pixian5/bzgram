@@ -35,6 +35,10 @@ public actor MockTelegramClient: TelegramClient {
         return state
     }
 
+    public func resendAuthenticationCode() async throws -> TelegramAuthorizationState {
+        return state
+    }
+
     public func submitCode(_ code: String) async throws -> TelegramAuthorizationState {
         let trimmed = code.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let phoneNumber = pendingPhoneNumber else {

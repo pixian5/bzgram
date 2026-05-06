@@ -49,7 +49,6 @@ public struct AddAccountView: View {
 
                     TextField("手机号（含国际区号）", text: $phoneNumber)
                         .textContentType(.telephoneNumber)
-                        .keyboardType(.phonePad)
                         .accessibilityLabel("手机号输入框")
                 }
 

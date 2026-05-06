@@ -72,6 +72,13 @@ public actor TDLibTelegramClient: TelegramClient {
         return state
     }
 
+    public func resendAuthenticationCode() async throws -> TelegramAuthorizationState {
+        try await ensureInitialized()
+        _ = try await client.resendAuthenticationCode(reason: nil)
+        try await refreshAuthorizationState()
+        return state
+    }
+
     public func submitCode(_ code: String) async throws -> TelegramAuthorizationState {
         let trimmed = code.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {

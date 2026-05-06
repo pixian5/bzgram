@@ -52,6 +52,12 @@ public final class TelegramSessionStore: ObservableObject {
         }
     }
 
+    public func resendAuthenticationCode() async {
+        await perform { [self] in
+            state = try await self.client.resendAuthenticationCode()
+        }
+    }
+
     public func submitCode(_ code: String) async {
         await perform { [self] in
             self.authorizationState = try await self.client.submitCode(code)
