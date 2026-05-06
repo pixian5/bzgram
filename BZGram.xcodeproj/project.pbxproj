@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0010D81D9989D521199B1833 /* EmptyTelegramClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 965088DEF448D39135B7470E /* EmptyTelegramClient.swift */; };
 		0081DC0A492EC29F1483EDCF /* BZGramCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 44ABF8E6A56C108423665022 /* BZGramCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		022183BA080A121B2D1C9E75 /* BZGramCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 44ABF8E6A56C108423665022 /* BZGramCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		04D6DB8F245C690477CA9015 /* Contact.swift in Sources */ = {isa = PBXBuildFile; fileRef = D357A77D3F622CE25626CD0C /* Contact.swift */; };
@@ -123,6 +124,7 @@
 		8D0D8A8BE3081D0BDFAEB570 /* AccountListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountListView.swift; sourceTree = "<group>"; };
 		8DAAA48D16DF7830160CFAF5 /* GlobalSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalSettingsView.swift; sourceTree = "<group>"; };
 		8FB12EECB0690AD1DE63FEFC /* TelegramUser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramUser.swift; sourceTree = "<group>"; };
+		965088DEF448D39135B7470E /* EmptyTelegramClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyTelegramClient.swift; sourceTree = "<group>"; };
 		9E0087D490B0FC73F9EAC21D /* BZGramTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = BZGramTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A082796E780644F9EE141677 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		A1E0841CA358C457DF05DC0A /* ChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatViewModel.swift; sourceTree = "<group>"; };
@@ -256,6 +258,7 @@
 				0C632AD7FFD0A44799F1C1B9 /* AccountManager.swift */,
 				CC7F021308C1DF13EE45DB26 /* ChatSummaryService.swift */,
 				34EDF42C41831CFB41437167 /* ContactService.swift */,
+				965088DEF448D39135B7470E /* EmptyTelegramClient.swift */,
 				48C49A0B18D44D3B761CA64B /* KeychainService.swift */,
 				1E1BD2CF3B380A097F618448 /* MediaService.swift */,
 				F7BA5180717D7FCE0182C3B2 /* SettingsStore.swift */,
@@ -499,6 +502,7 @@
 				04D6DB8F245C690477CA9015 /* Contact.swift in Sources */,
 				20600BB79933883DAB7B4B67 /* ContactListViewModel.swift in Sources */,
 				3D3088B225265C32DECA93A2 /* ContactService.swift in Sources */,
+				0010D81D9989D521199B1833 /* EmptyTelegramClient.swift in Sources */,
 				728FE69E1FE6448EE287E0E0 /* KeychainService.swift in Sources */,
 				A996AF34CA5BE38DB3D9272E /* MediaService.swift in Sources */,
 				9E4915EEA2E68F222E872247 /* Message.swift in Sources */,
@@ -585,7 +589,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 26;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 2P5Z4JVY8W;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -599,7 +603,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.0.9;
+				MARKETING_VERSION = 1.0.20;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -690,7 +694,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 26;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 2P5Z4JVY8W;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -710,7 +714,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.0.9;
+				MARKETING_VERSION = 1.0.20;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

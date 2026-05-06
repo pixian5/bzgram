@@ -7,13 +7,16 @@ import Combine
 /// 通过 TelegramClient 从 TDLib 获取真实联系人数据
 public final class ContactService: ObservableObject {
 
-    private let client: TelegramClient
+    private var client: TelegramClient {
+        accountManager.activeClient
+    }
+    private let accountManager: AccountManager
     private var contacts: [Contact] = []
     private var contactsByID: [Int64: Contact] = [:]
 
-    /// 必须从外部注入 TelegramClient，保持 DI 一致性
-    public init(client: TelegramClient) {
-        self.client = client
+    /// 注入 AccountManager 以实现动态客户端切换
+    public init(accountManager: AccountManager) {
+        self.accountManager = accountManager
     }
 
     // MARK: - Public API

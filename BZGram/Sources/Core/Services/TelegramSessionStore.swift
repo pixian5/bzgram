@@ -18,14 +18,15 @@ public final class TelegramSessionStore: ObservableObject {
     /// Toast 提示消息
     @Published public var toastMessage: String?
 
-    private let client: TelegramClient
+    private var client: TelegramClient {
+        accountManager.activeClient
+    }
     private let accountManager: AccountManager
+    private var updateDelegateRegistered: Bool = false
 
     public init(
-        client: TelegramClient,
         accountManager: AccountManager
     ) {
-        self.client = client
         self.accountManager = accountManager
     }
 

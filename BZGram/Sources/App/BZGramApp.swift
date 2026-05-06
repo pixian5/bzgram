@@ -17,18 +17,15 @@ public struct BZGramApp: App {
         let manager = AccountManager()
         let settings = SettingsStore()
 
-        // 使用活跃账号的 TDLib 客户端
-        let client = manager.activeClient
         let session = TelegramSessionStore(
-            client: client,
             accountManager: manager
         )
 
-        // 创建联系人服务（注入同一个 TelegramClient）
-        let contacts = ContactService(client: client)
+        // 创建联系人服务（注入 AccountManager 以实现动态客户端切换）
+        let contacts = ContactService(accountManager: manager)
 
         // 配置 MediaService 的下载通道
-        MediaService.shared.configure(client: client)
+        MediaService.shared.configure(client: manager.activeClient)
 
         _accountManager = StateObject(wrappedValue: manager)
         _settingsStore = StateObject(wrappedValue: settings)

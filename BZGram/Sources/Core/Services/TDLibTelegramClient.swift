@@ -18,21 +18,31 @@ public actor TDLibTelegramClient: TelegramClient {
     private var pendingPhoneNumber: String?
     /// 实时更新委托
     private weak var updateDelegate: TelegramUpdateDelegate?
+    private let updateHandlerRef: TDLibUpdateHandlerRef
+
     public init(configuration: TelegramAPIConfiguration, instanceId: String = "default") {
         self.configuration = configuration
         self.instanceId = instanceId
-        self.client = Self.manager.createClient(updateHandler: { _, _ in })
+        
+        // 在初始化时就定死 updateHandler，避免后续重建客户端导致文件锁死
+        let weakRef = TDLibUpdateHandlerRef()
+        self.client = Self.manager.createClient { data, client in
+            Task {
+                await weakRef.handler?(data)
+            }
+        }
+        self.updateHandlerRef = weakRef
+        weakRef.handler = { [weak self] data in
+            await self?.handleUpdate(data)
+        }
     }
 
     public func setUpdateDelegate(_ delegate: TelegramUpdateDelegate?) {
         self.updateDelegate = delegate
-        // 重建客户端以注册新的 updateHandler
-        self.client = Self.manager.createClient { [weak self] data, client in
-            guard let self = self else { return }
-            Task {
-                await self.handleUpdate(data)
-            }
-        }
+    }
+
+    private class TDLibUpdateHandlerRef {
+        var handler: ((Data) async -> Void)?
     }
 
     public func authorizationState() async -> TelegramAuthorizationState {
@@ -59,7 +69,7 @@ public actor TDLibTelegramClient: TelegramClient {
         self.pendingPhoneNumber = normalizedPhoneNumber
 
         try await ensureInitialized()
-        print("📲 [BZGram] Sending verification code request for: \(normalizedPhoneNumber)")
+        print("📲 [BZGram] 开始提交手机号验证请求: \(normalizedPhoneNumber)")
         try await client.setAuthenticationPhoneNumber(
             phoneNumber: normalizedPhoneNumber,
             settings: PhoneNumberAuthenticationSettings(
@@ -90,13 +100,10 @@ public actor TDLibTelegramClient: TelegramClient {
         }
 
         try await ensureInitialized()
-        do {
-            try await client.checkAuthenticationCode(code: trimmed)
-            try await refreshAuthorizationState()
-        } catch {
-            throw map(error: error)
-        }
-
+        // checkAuthenticationCode 即使返回 error，TDLib 也可能已经推进了授权状态
+        // （例如验证码错误时返回 WaitCode 带新倒计时，或错误时跳到 WaitPassword）
+        _ = try? await client.checkAuthenticationCode(code: trimmed)
+        try await refreshAuthorizationState()
         if case .ready = state {
             currentTelegramUser = try? await fetchCurrentUser()
         }
@@ -362,7 +369,8 @@ public actor TDLibTelegramClient: TelegramClient {
 
     private func configureTDLib() async throws {
         let directories = try makeDirectories()
-        print("🛠 [BZGram] Configuring TDLib with API ID: \(configuration.apiID)")
+        print("🛠 [BZGram] 正在配置 TDLib 参数，API ID: \(configuration.apiID)...")
+        print("🛠 [BZGram] 数据库目录: \(directories.databaseDirectory.path)")
         
         try await client.setTdlibParameters(
             apiHash: configuration.apiHash,
@@ -380,6 +388,7 @@ public actor TDLibTelegramClient: TelegramClient {
             useSecretChats: true,
             useTestDc: configuration.useTestDC
         )
+        print("✅ [BZGram] TDLib 参数配置成功！")
     }
 
     private func fetchCurrentUser() async throws -> TelegramUser {
@@ -651,11 +660,12 @@ public actor TDLibTelegramClient: TelegramClient {
             if tdError.code == 400, message.contains("code") {
                 return .invalidCode
             }
-            if tdError.code == 400, message.contains("password") {
+            if tdError.code == 400, (message.contains("password") || message.contains("2fa")) {
                 return .invalidPassword
             }
+            return .unknown("TDLib Error \(tdError.code): \(tdError.message)")
         }
-        return .unauthorized
+        return .unknown(error.localizedDescription)
     }
 
     private func date(fromUnixTimestamp timestamp: Int?) -> Foundation.Date? {

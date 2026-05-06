@@ -34,5 +34,6 @@ unused-pip-packages.txt
  
 # Builds and binary artifacts
 Builds/
+BuildOutput/
 *.tipa
 *.ipa

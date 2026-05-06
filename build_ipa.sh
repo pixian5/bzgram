@@ -19,16 +19,17 @@ sed -i '' "s/MARKETING_VERSION: $CURRENT_MARKETING/MARKETING_VERSION: $NEW_MARKE
 
 echo "📈 版本号已更新：Build -> $NEW_BUILD, Version -> $NEW_MARKETING"
 
-echo "🔄 正在彻底清理旧缓存 (DerivedData)..."
-rm -rf ./DerivedData
+# echo "🔄 正在彻底清理旧缓存 (DerivedData)..."
+# rm -rf ./DerivedData
 
 echo "🔄 正在同步工程配置 (xcodegen)..."
+rm -rf BuildOutput
 xcodegen generate
 
 echo "🚀 开始编译 BZGram (Release)..."
 
 # 1. 强制跳过签名限制进行 Release 编译
-xcodebuild clean build \
+xcodebuild build \
   -scheme BZGram \
   -project BZGram.xcodeproj \
   -configuration Release \
@@ -37,7 +38,7 @@ xcodebuild clean build \
   CODE_SIGNING_REQUIRED=NO \
   CODE_SIGN_IDENTITY="" \
   CODE_SIGN_ENTITLEMENTS="" \
-  -derivedDataPath ./DerivedData
+  SYMROOT=$(pwd)/BuildOutput
 
 if [ $? -eq 0 ]; then
     echo "✅ 编译成功，正在打包 TIPA..."
@@ -45,7 +46,7 @@ if [ $? -eq 0 ]; then
     # 2. 将编译产物打包为 TIPA
     rm -rf Payload
     mkdir -p Payload
-    cp -R ./DerivedData/Build/Products/Release-iphoneos/BZGram.app Payload/
+    cp -R ./BuildOutput/Release-iphoneos/BZGram.app Payload/
     
     # 生成最终文件名 (包含 Version 和 Build)
     FILENAME="Builds/BZGram_v${NEW_MARKETING}_Build${NEW_BUILD}_$(date +%m%d).tipa"

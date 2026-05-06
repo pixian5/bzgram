@@ -38,6 +38,12 @@ public final class AccountManager {
     ) {
         self.keychain = keychain
         self.legacyStore = legacyStore
+        
+        // 强制清理旧的 guest_session 临时目录，防止文件锁死
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let guestPath = appSupport.appendingPathComponent("BZGram/accounts/guest_session")
+        try? FileManager.default.removeItem(at: guestPath)
+        
         load()
     }
 
@@ -131,7 +137,7 @@ public final class AccountManager {
             return existing
         }
         guard let account = accounts.first(where: { $0.id == accountID }) else {
-            fatalError("Account not found")
+            return EmptyTelegramClient()
         }
         let client = createClient(for: account)
         clientInstances[accountID] = client
@@ -140,10 +146,19 @@ public final class AccountManager {
 
     /// 获取当前活跃账号的 TelegramClient
     public var activeClient: TelegramClient {
-        guard let active = activeAccount else {
-            fatalError("No active account")
+        // 1. 如果有活跃账号，直接返回其对应的 Client
+        if let active = activeAccount {
+            return clientForAccount(active.id)
         }
-        return clientForAccount(active.id)
+        
+        // 2. 如果没有活跃账号但账号列表不为空，尝试使用第一个账号（防止初始化时的逻辑真空）
+        if let firstAccount = accounts.first {
+            return clientForAccount(firstAccount.id)
+        }
+        
+        // 3. 如果完全没有任何账号，创建一个临时的真实客户端用于“首次登录”
+        // 使用 "guest_session" 作为隔离目录名
+        return TelegramClientFactory.makeDefaultClient(instanceId: "guest_session")
     }
 
     /// 销毁所有 TDLib 实例
