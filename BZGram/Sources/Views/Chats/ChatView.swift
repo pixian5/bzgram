@@ -162,12 +162,12 @@ public struct ChatView: View {
         if let reply = viewModel.replyToMessage {
             HStack {
                 Rectangle()
-                    .fill(.accentColor)
+                    .fill(Color.accentColor)
                     .frame(width: 3)
                 VStack(alignment: .leading) {
                     Text(reply.senderName)
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(.accentColor)
+                        .foregroundStyle(Color.accentColor)
                     Text(reply.originalText)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -243,7 +243,7 @@ public struct ChatView: View {
                 } label: {
                     Image(systemName: "arrow.up.circle.fill")
                         .font(.title2)
-                        .foregroundStyle(.accentColor)
+                        .foregroundStyle(Color.accentColor)
                 }
                 .disabled(viewModel.draftMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
@@ -277,7 +277,7 @@ private struct MessageBubbleView: View {
                 if !message.isOutgoing {
                     Text(message.senderName)
                         .font(.caption.weight(.medium))
-                        .foregroundStyle(.accentColor)
+                        .foregroundStyle(Color.accentColor)
                 }
 
                 // 消息内容卡片

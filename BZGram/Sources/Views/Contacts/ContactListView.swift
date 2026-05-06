@@ -89,7 +89,7 @@ private struct ContactRowView: View {
                     .frame(width: 44, height: 44)
                 Text(contact.initials)
                     .font(.headline)
-                    .foregroundStyle(.accentColor)
+                    .foregroundStyle(Color.accentColor)
                 // 在线状态指示器
                 if contact.status == .online {
                     Circle()
@@ -109,7 +109,7 @@ private struct ContactRowView: View {
                 if let username = contact.username {
                     Text("@\(username)")
                         .font(.caption)
-                        .foregroundStyle(.accentColor)
+                        .foregroundStyle(Color.accentColor)
                 }
                 Text(contact.statusText)
                     .font(.caption)
