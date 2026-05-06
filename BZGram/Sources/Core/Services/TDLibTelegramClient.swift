@@ -162,6 +162,10 @@ public actor TDLibTelegramClient: TelegramClient {
         } else {
             chatList = .chatListMain
         }
+        
+        // 核心修复：必须调用 loadChats 触发 TDLib 从服务器同步对话列表和文件夹
+        _ = try? await client.loadChats(chatList: chatList, limit: 100)
+
         let ids = try await client.getChats(chatList: chatList, limit: 100).chatIds
         var chats: [Chat] = []
         chats.reserveCapacity(ids.count)
@@ -180,26 +184,42 @@ public actor TDLibTelegramClient: TelegramClient {
     public func fetchMessages(in chatID: Int64) async throws -> [Message] {
         try await ensureAuthorized()
 
+        print("🚀 [BZGram] fetchMessages for chatID: \(chatID)")
         // 必须先 openChat，TDLib 才会为超级群组/频道返回完整历史
-        try await client.openChat(chatId: chatID)
+        do {
+            _ = try await client.openChat(chatId: chatID)
+        } catch {
+            print("❌ [BZGram] openChat error: \(error)")
+        }
+
+        // 获取该对话最新的 messageId 作为起点
+        var startMessageId: Int64 = 0
+        if let chat = try? await client.getChat(chatId: chatID), let lastMsg = chat.lastMessage {
+            startMessageId = lastMsg.id
+        }
 
         let history = try await client.getChatHistory(
             chatId: chatID,
-            fromMessageId: 0,
+            fromMessageId: startMessageId,
             limit: 100,
             offset: 0,
             onlyLocal: false
         )
 
         let tdMessages = history.messages ?? []
+        print("🚀 [BZGram] getChatHistory returned \(tdMessages.count) messages")
+        
         var mapped: [Message] = []
         mapped.reserveCapacity(tdMessages.count)
         for tdMessage in tdMessages {
             if let message = try await map(message: tdMessage) {
                 mapped.append(message)
+            } else {
+                print("⚠️ [BZGram] Failed to map message: \(tdMessage)")
             }
         }
 
+        print("🚀 [BZGram] successfully mapped \(mapped.count) messages")
         return mapped.sorted { $0.date < $1.date }
     }
 
@@ -588,15 +608,19 @@ public actor TDLibTelegramClient: TelegramClient {
             }
 
         case "updateChatFolders":
+            print("📁 [BZGram] Received updateChatFolders: \(json)")
             if let folders = json["chat_folders"] as? [[String: Any]] {
-                cachedFolders = folders.compactMap { dict in
+                let parsedFolders = folders.compactMap { dict -> ChatFolder? in
                     guard let id = dict["id"] as? Int else { return nil }
                     // ChatFolderInfo.name 是 ChatFolderName 对象，其 text 是 FormattedText 对象
                     let nameObj = dict["name"] as? [String: Any]
                     let textObj = nameObj?["text"] as? [String: Any]
                     let title = textObj?["text"] as? String ?? "文件夹"
+                    print("📁 [BZGram] Parsed folder: id=\(id), title=\(title)")
                     return ChatFolder(id: id, title: title)
                 }
+                cachedFolders = parsedFolders
+                Task { @MainActor in delegate.didUpdateChatFolders(parsedFolders) }
             }
 
         case "updateAuthenticationCode":

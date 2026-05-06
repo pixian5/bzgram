@@ -18,6 +18,7 @@ public final class ChatListViewModel: ObservableObject {
 
     private let settingsStore: SettingsStore
     private let sessionStore: TelegramSessionStore
+    private var cancellables = Set<AnyCancellable>()
 
     public enum ChatFilter: String, CaseIterable {
         case all = "全部"
@@ -34,6 +35,17 @@ public final class ChatListViewModel: ObservableObject {
         self.settingsStore = settingsStore
         self.sessionStore = sessionStore
         self.chats = sessionStore.chats
+        self.folders = sessionStore.folders
+        
+        sessionStore.$folders
+            .receive(on: RunLoop.main)
+            .assign(to: \.folders, on: self)
+            .store(in: &cancellables)
+
+        sessionStore.$chats
+            .receive(on: RunLoop.main)
+            .assign(to: \.chats, on: self)
+            .store(in: &cancellables)
     }
 
     /// 按条件过滤后的聊天列表

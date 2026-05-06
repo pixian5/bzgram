@@ -502,4 +502,10 @@ extension TelegramSessionStore: TelegramUpdateDelegate {
             self.authorizationState = state
         }
     }
+    
+    public nonisolated func didUpdateChatFolders(_ folders: [ChatFolder]) {
+        Task { @MainActor in
+            self.folders = folders
+        }
+    }
 }
