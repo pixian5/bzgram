@@ -19,8 +19,18 @@ public final class AccountManager {
     /// 当前用户选中的活跃账号
     public private(set) var activeAccount: Account?
 
-    /// 每个账号对应的 TelegramClient 实例（按账号 ID 索引）
+    /// Every account's TelegramClient, keyed by account UUID.
     public private(set) var clientInstances: [UUID: TelegramClient] = [:]
+
+    // MARK: - Guest session
+
+    /// Cached TelegramClient for the initial "no accounts yet" login flow.
+    /// Using a single cached instance prevents multiple TDLib processes from
+    /// contending over the same database directory.
+    private var guestClient: TelegramClient?
+
+    /// True while a guest-session client is active (i.e. first-time login is in progress).
+    public var hasGuestSession: Bool { guestClient != nil }
 
     // MARK: - Private
 
@@ -38,23 +48,29 @@ public final class AccountManager {
     ) {
         self.keychain = keychain
         self.legacyStore = legacyStore
-        
-        // 强制清理旧的 guest_session 临时目录，防止文件锁死
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let guestPath = appSupport.appendingPathComponent("BZGram/accounts/guest_session")
-        try? FileManager.default.removeItem(at: guestPath)
-        
+
+        // Load accounts first so we can check whether guest_session is in use.
         load()
+
+        // Only clean up the guest_session directory when no account depends on it.
+        // (If an account was created via the guest login flow its tdlibInstanceId is
+        // "guest_session" and we must keep the database intact across restarts.)
+        if !accounts.contains(where: { $0.tdlibInstanceId == "guest_session" }) {
+            let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+            let guestPath = appSupport.appendingPathComponent("BZGram/accounts/guest_session")
+            try? FileManager.default.removeItem(at: guestPath)
+        }
     }
 
     // MARK: - 账号管理 Public API
 
     /// 添加新账号，没有数量上限。返回新创建的 `Account`。
     @discardableResult
-    public func addAccount(displayName: String, phoneNumber: String) -> Account {
+    public func addAccount(displayName: String, phoneNumber: String, tdlibInstanceId: String? = nil) -> Account {
         let account = Account(
             displayName: displayName,
             phoneNumber: phoneNumber,
+            tdlibInstanceId: tdlibInstanceId,
             sortOrder: accounts.count
         )
         accounts.append(account)
@@ -150,15 +166,27 @@ public final class AccountManager {
         if let active = activeAccount {
             return clientForAccount(active.id)
         }
-        
+
         // 2. 如果没有活跃账号但账号列表不为空，尝试使用第一个账号（防止初始化时的逻辑真空）
         if let firstAccount = accounts.first {
             return clientForAccount(firstAccount.id)
         }
-        
-        // 3. 如果完全没有任何账号，创建一个临时的真实客户端用于“首次登录”
-        // 使用 "guest_session" 作为隔离目录名
-        return TelegramClientFactory.makeDefaultClient(instanceId: "guest_session")
+
+        // 3. 完全没有账号时使用 guest_session 客户端（首次登录流程）。
+        //    缓存同一个实例，确保 submitPhoneNumber / submitCode 等步骤
+        //    共享同一个 TDLib 进程，避免多进程争抢同一数据库文件而返回 error 1。
+        if guestClient == nil {
+            guestClient = TelegramClientFactory.makeDefaultClient(instanceId: "guest_session")
+        }
+        return guestClient!
+    }
+
+    /// 登录完成后，将 guest-session 客户端迁移到正式账号。
+    /// 确保已认证的 TDLib 状态（含会话数据库）持续供该账号使用。
+    public func transferGuestSession(to accountID: UUID) {
+        guard let guest = guestClient else { return }
+        clientInstances[accountID] = guest
+        guestClient = nil
     }
 
     /// 销毁所有 TDLib 实例
