@@ -48,11 +48,12 @@ if [ $? -eq 0 ]; then
     cp -R ./DerivedData/Build/Products/Release-iphoneos/BZGram.app Payload/
     
     # 生成最终文件名 (包含 Version 和 Build)
-    FILENAME="BZGram_v${NEW_MARKETING}_Build${NEW_BUILD}_$(date +%m%d).tipa"
+    FILENAME="Builds/BZGram_v${NEW_MARKETING}_Build${NEW_BUILD}_$(date +%m%d).tipa"
     zip -r "$FILENAME" Payload
     
     rm -rf Payload
     echo "🎉 打包完成！文件已生成: $FILENAME"
+    echo "📂 请在 Builds/ 文件夹中查看。"
 else
     echo "❌ 编译失败，请检查上面的错误日志。"
     exit 1

@@ -31,3 +31,8 @@ unused-pip-packages.txt
 # IDE
 .idea/
 *.code-workspace
+ 
+# Builds and binary artifacts
+Builds/
+*.tipa
+*.ipa
