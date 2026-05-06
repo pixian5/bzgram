@@ -61,9 +61,11 @@ public final class TelegramSessionStore: ObservableObject {
     public func submitCode(_ code: String) async {
         await perform { [self] in
             self.authorizationState = try await self.client.submitCode(code)
-            self.currentUser = await self.client.currentUser()
-            self.syncAuthorizedAccount()
-            await self.refreshChats()
+            if case .ready = self.authorizationState {
+                self.currentUser = await self.client.currentUser()
+                self.syncAuthorizedAccount()
+                await self.refreshChats()
+            }
         }
     }
 
