@@ -180,6 +180,9 @@ public actor TDLibTelegramClient: TelegramClient {
     public func fetchMessages(in chatID: Int64) async throws -> [Message] {
         try await ensureAuthorized()
 
+        // 必须先 openChat，TDLib 才会为超级群组/频道返回完整历史
+        try await client.openChat(chatId: chatID)
+
         let history = try await client.getChatHistory(
             chatId: chatID,
             fromMessageId: 0,
@@ -587,8 +590,11 @@ public actor TDLibTelegramClient: TelegramClient {
         case "updateChatFolders":
             if let folders = json["chat_folders"] as? [[String: Any]] {
                 cachedFolders = folders.compactMap { dict in
-                    guard let id = dict["id"] as? Int,
-                          let title = dict["title"] as? String else { return nil }
+                    guard let id = dict["id"] as? Int else { return nil }
+                    // ChatFolderInfo.name 是 ChatFolderName 对象，其 text 是 FormattedText 对象
+                    let nameObj = dict["name"] as? [String: Any]
+                    let textObj = nameObj?["text"] as? [String: Any]
+                    let title = textObj?["text"] as? String ?? "文件夹"
                     return ChatFolder(id: id, title: title)
                 }
             }
