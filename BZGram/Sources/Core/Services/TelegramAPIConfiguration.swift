@@ -13,13 +13,18 @@ public struct TelegramAPIConfiguration: Equatable, Sendable {
     }
 
     public static func load(from bundle: Bundle = .main) -> TelegramAPIConfiguration? {
-        let rawAPIID = bundle.object(forInfoDictionaryKey: "BZGRAM_TELEGRAM_API_ID") as? String
+        let rawAPIID = bundle.object(forInfoDictionaryKey: "BZGRAM_TELEGRAM_API_ID")
         let rawAPIHash = bundle.object(forInfoDictionaryKey: "BZGRAM_TELEGRAM_API_HASH") as? String
         let rawUseTestDC = bundle.object(forInfoDictionaryKey: "BZGRAM_TELEGRAM_USE_TEST_DC")
 
+        let apiID: Int? = {
+            if let str = rawAPIID as? String { return Int(str.trimmingCharacters(in: .whitespacesAndNewlines)) }
+            if let num = rawAPIID as? NSNumber { return num.intValue }
+            return nil
+        }()
+
         guard
-            let apiIDString = rawAPIID?.trimmingCharacters(in: .whitespacesAndNewlines),
-            let apiID = Int(apiIDString),
+            let finalAPIID = apiID,
             let apiHash = rawAPIHash?.trimmingCharacters(in: .whitespacesAndNewlines),
             !apiHash.isEmpty
         else {
@@ -27,7 +32,7 @@ public struct TelegramAPIConfiguration: Equatable, Sendable {
         }
 
         return TelegramAPIConfiguration(
-            apiID: apiID,
+            apiID: finalAPIID,
             apiHash: apiHash,
             useTestDC: Self.boolValue(from: rawUseTestDC)
         )

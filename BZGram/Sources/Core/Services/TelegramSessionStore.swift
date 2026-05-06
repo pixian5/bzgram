@@ -428,15 +428,15 @@ extension TelegramSessionStore: TelegramUpdateDelegate {
                 var msg = self.messagesByChatID[chatID]![index]
                 let textToSave = self.antiDeleteEnabled ? "\(msg.originalText)\n\n[新版本]\n\(newText)" : newText
                 msg = Message(
-                    id: msg.id, chatID: msg.chatID, senderName: msg.senderName,
-                    senderUserID: msg.senderUserID, originalText: textToSave,
-                    translatedText: nil, date: msg.date, isOutgoing: msg.isOutgoing,
-                    contentType: msg.contentType, attachment: msg.attachment,
-                    isEdited: true, replyToMessageId: msg.replyToMessageId,
-                    canBeDeleted: msg.canBeDeleted, canBeEdited: msg.canBeEdited,
-                    sendStatus: msg.sendStatus
+                    id: msg.id,
+                    chatID: msg.chatID,
+                    senderName: msg.senderName,
+                    originalText: textToSave,
+                    date: msg.date,
+                    isOutgoing: msg.isOutgoing,
+                    isEdited: true
                 )
-                self.messagesByChatID[chatID]![index] = msg
+                self.messagesByChatID[chatID]?[index] = msg
             }
         }
     }
@@ -447,22 +447,29 @@ extension TelegramSessionStore: TelegramUpdateDelegate {
             if self.antiDeleteEnabled {
                 for id in messageIDs {
                     if let index = self.messagesByChatID[chatID]?.firstIndex(where: { $0.id == id }) {
-                        var msg = self.messagesByChatID[chatID]![index]
-                        msg = Message(
-                            id: msg.id, chatID: msg.chatID, senderName: msg.senderName,
-                            senderUserID: msg.senderUserID, originalText: "[被撤回] " + msg.originalText,
-                            translatedText: nil, date: msg.date, isOutgoing: msg.isOutgoing,
-                            contentType: msg.contentType, attachment: msg.attachment,
-                            isEdited: msg.isEdited, replyToMessageId: msg.replyToMessageId,
-                            canBeDeleted: msg.canBeDeleted, canBeEdited: false,
-                            sendStatus: msg.sendStatus
+                        let oldMsg = self.messagesByChatID[chatID]![index]
+                        let updatedMsg = Message(
+                            id: oldMsg.id,
+                            chatID: oldMsg.chatID,
+                            senderName: oldMsg.senderName,
+                            originalText: "[被撤回] " + oldMsg.originalText,
+                            date: oldMsg.date,
+                            isOutgoing: oldMsg.isOutgoing,
+                            isEdited: oldMsg.isEdited
                         )
-                        self.messagesByChatID[chatID]![index] = msg
+                        self.messagesByChatID[chatID]![index] = updatedMsg
                     }
                 }
             } else {
                 self.messagesByChatID[chatID]?.removeAll { messageIDs.contains($0.id) }
             }
+        }
+    }
+
+    /// 登录状态发生变化 → 自动更新 UI 状态
+    public nonisolated func didUpdateAuthorizationState(_ state: TelegramAuthorizationState) {
+        Task { @MainActor in
+            self.authorizationState = state
         }
     }
 }

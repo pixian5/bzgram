@@ -45,6 +45,8 @@ public protocol TelegramUpdateDelegate: AnyObject, Sendable {
     @MainActor func didUpdateMessageContent(chatID: Int64, messageID: Int64, newText: String)
     /// 消息被删除
     @MainActor func didDeleteMessages(chatID: Int64, messageIDs: [Int64])
+    /// 登录状态发生变化
+    @MainActor func didUpdateAuthorizationState(_ state: TelegramAuthorizationState)
 }
 
 /// Telegram 传输层抽象，使 App 可以在 Mock 和 TDLib 实现之间切换。

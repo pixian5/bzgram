@@ -14,6 +14,8 @@ public actor TDLibTelegramClient: TelegramClient {
     private var currentTelegramUser: TelegramUser?
     private var cachedUsers: [Int64: User] = [:]
     private var cachedChats: [Int64: TDLibKit.Chat] = [:]
+    /// 临时保存正在登录的手机号
+    private var pendingPhoneNumber: String?
     /// 实时更新委托
     private weak var updateDelegate: TelegramUpdateDelegate?
     public init(configuration: TelegramAPIConfiguration, instanceId: String = "default") {
@@ -54,8 +56,10 @@ public actor TDLibTelegramClient: TelegramClient {
         guard normalizedPhoneNumber.count >= 7 else {
             throw TelegramClientError.invalidPhoneNumber
         }
+        self.pendingPhoneNumber = normalizedPhoneNumber
 
         try await ensureInitialized()
+        print("📲 [BZGram] Sending verification code request for: \(normalizedPhoneNumber)")
         try await client.setAuthenticationPhoneNumber(
             phoneNumber: normalizedPhoneNumber,
             settings: PhoneNumberAuthenticationSettings(
@@ -358,6 +362,8 @@ public actor TDLibTelegramClient: TelegramClient {
 
     private func configureTDLib() async throws {
         let directories = try makeDirectories()
+        print("🛠 [BZGram] Configuring TDLib with API ID: \(configuration.apiID)")
+        
         try await client.setTdlibParameters(
             apiHash: configuration.apiHash,
             apiId: configuration.apiID,
@@ -390,11 +396,12 @@ public actor TDLibTelegramClient: TelegramClient {
         switch authorizationState {
         case .authorizationStateWaitTdlibParameters, .authorizationStateWaitPhoneNumber, .authorizationStateWaitOtherDeviceConfirmation, .authorizationStateWaitRegistration:
             return .waitingForPhoneNumber
-        case .authorizationStateWaitCode:
-            let phoneNumber = currentTelegramUser?.phoneNumber ?? ""
+        case .authorizationStateWaitCode(let waitCode):
+            // 修正：从关联值中获取状态，并确保手机号能正确传递
+            let phoneNumber = pendingPhoneNumber ?? ""
             return .waitingForCode(phoneNumber: phoneNumber)
         case .authorizationStateWaitPassword(let passwordState):
-            let phoneNumber = currentTelegramUser?.phoneNumber ?? ""
+            let phoneNumber = pendingPhoneNumber ?? ""
             let hint = passwordState.passwordHint.isEmpty ? nil : passwordState.passwordHint
             return .waitingForPassword(phoneNumber: phoneNumber, hint: hint)
         case .authorizationStateReady:
@@ -530,6 +537,21 @@ public actor TDLibTelegramClient: TelegramClient {
               let type = json["@type"] as? String else { return }
 
         switch type {
+        case "updateAuthorizationState":
+            // 核心修复：监听授权状态变更
+            if let stateDict = json["authorization_state"] as? [String: Any],
+               let stateData = try? JSONSerialization.data(withJSONObject: stateDict),
+               let tdState = try? JSONDecoder().decode(AuthorizationState.self, from: stateData) {
+                currentTDLibState = tdState
+                let newState = map(authorizationState: tdState)
+                self.state = newState
+                Task { @MainActor in delegate.didUpdateAuthorizationState(newState) }
+            }
+
+        case "updateAuthenticationCode":
+            // 收到验证码发送详情 (例如：短信已发送)
+            print("📩 [BZGram] Received Authentication Code Update: \(json)")
+
         case "updateNewMessage":
             // 收到新消息
             guard let messageDict = json["message"] as? [String: Any],

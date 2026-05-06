@@ -32,6 +32,9 @@ public actor MockTelegramClient: TelegramClient {
         }
         pendingPhoneNumber = trimmed
         state = .waitingForCode(phoneNumber: trimmed)
+        let newState = state
+        let delegate = updateDelegate
+        Task { @MainActor in delegate?.didUpdateAuthorizationState(newState) }
         return state
     }
 
@@ -55,6 +58,9 @@ public actor MockTelegramClient: TelegramClient {
         )
         bootstrapDemoData(for: phoneNumber)
         state = .ready
+        let newState = state
+        let delegate = updateDelegate
+        Task { @MainActor in delegate?.didUpdateAuthorizationState(newState) }
         return state
     }
 
