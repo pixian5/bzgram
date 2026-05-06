@@ -10,6 +10,7 @@ public final class ContactListViewModel: ObservableObject {
     @Published public var contacts: [Contact] = []
     @Published public var isLoading: Bool = false
     @Published public var searchQuery: String = ""
+    @Published public var errorMessage: String?
 
     private let contactService: ContactService
 
@@ -22,6 +23,7 @@ public final class ContactListViewModel: ObservableObject {
     public func loadContacts() async {
         isLoading = true
         contacts = await contactService.fetchContacts()
+        errorMessage = contactService.lastErrorMessage
         isLoading = false
     }
 

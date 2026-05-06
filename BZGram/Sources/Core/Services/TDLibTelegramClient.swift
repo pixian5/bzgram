@@ -150,7 +150,53 @@ public actor TDLibTelegramClient: TelegramClient {
 
     public func fetchFolders() async throws -> [ChatFolder] {
         try await ensureAuthorized()
+        if cachedFolders.isEmpty {
+            _ = try? await client.loadChats(chatList: .chatListMain, limit: 1)
+            for _ in 0..<10 where cachedFolders.isEmpty {
+                try? await Task.sleep(nanoseconds: 100_000_000)
+            }
+        }
         return cachedFolders
+    }
+
+    public func fetchContacts() async throws -> [Contact] {
+        try await ensureAuthorized()
+        let usersInfo = try await client.getContacts()
+        var contacts = [Contact]()
+        contacts.reserveCapacity(usersInfo.userIds.count)
+
+        for userId in usersInfo.userIds {
+            if let user = try? await client.getUser(userId: userId) {
+                contacts.append(map(user: user))
+            }
+        }
+        return contacts
+    }
+
+    private func map(user: TDLibKit.User) -> Contact {
+        let displayName = [user.firstName, user.lastName]
+            .compactMap { $0 }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+
+        let status: Contact.OnlineStatus
+        switch user.status {
+        case .userStatusOnline: status = .online
+        case .userStatusOffline: status = .offline
+        case .userStatusRecently: status = .recently
+        case .userStatusLastWeek: status = .lastWeek
+        case .userStatusLastMonth: status = .lastMonth
+        case .userStatusEmpty: status = .unknown
+        }
+
+        return Contact(
+            id: user.id,
+            displayName: displayName.isEmpty ? "Unknown" : displayName,
+            username: user.usernames?.activeUsernames.first,
+            phoneNumber: user.phoneNumber.isEmpty ? nil : user.phoneNumber,
+            status: status,
+            isMutualContact: user.isMutualContact
+        )
     }
 
     public func fetchChats(folderId: Int? = nil) async throws -> [Chat] {
@@ -192,15 +238,9 @@ public actor TDLibTelegramClient: TelegramClient {
             print("❌ [BZGram] openChat error: \(error)")
         }
 
-        // 获取该对话最新的 messageId 作为起点
-        var startMessageId: Int64 = 0
-        if let chat = try? await client.getChat(chatId: chatID), let lastMsg = chat.lastMessage {
-            startMessageId = lastMsg.id
-        }
-
         let history = try await client.getChatHistory(
             chatId: chatID,
-            fromMessageId: startMessageId,
+            fromMessageId: 0,
             limit: 100,
             offset: 0,
             onlyLocal: false
@@ -208,6 +248,14 @@ public actor TDLibTelegramClient: TelegramClient {
 
         let tdMessages = history.messages ?? []
         print("🚀 [BZGram] getChatHistory returned \(tdMessages.count) messages")
+
+        if tdMessages.isEmpty,
+           let chat = try? await client.getChat(chatId: chatID),
+           let lastMessage = chat.lastMessage,
+           let message = try? await map(message: lastMessage) {
+            print("⚠️ [BZGram] History empty; using chat.lastMessage fallback")
+            return [message]
+        }
         
         var mapped: [Message] = []
         mapped.reserveCapacity(tdMessages.count)
@@ -237,7 +285,7 @@ public actor TDLibTelegramClient: TelegramClient {
             topicId: nil
         )
 
-        let tdMessages = results.messages ?? []
+        let tdMessages = results.messages
         var mapped: [Message] = []
         mapped.reserveCapacity(tdMessages.count)
         for tdMessage in tdMessages {
@@ -440,7 +488,7 @@ public actor TDLibTelegramClient: TelegramClient {
         switch authorizationState {
         case .authorizationStateWaitTdlibParameters, .authorizationStateWaitPhoneNumber, .authorizationStateWaitOtherDeviceConfirmation, .authorizationStateWaitRegistration:
             return .waitingForPhoneNumber
-        case .authorizationStateWaitCode(let waitCode):
+        case .authorizationStateWaitCode:
             // 修正：从关联值中获取状态，并确保手机号能正确传递
             let phoneNumber = pendingPhoneNumber ?? ""
             return .waitingForCode(phoneNumber: phoneNumber)
@@ -589,8 +637,6 @@ public actor TDLibTelegramClient: TelegramClient {
 
     /// 处理 TDLib 服务器推送的实时更新
     private func handleUpdate(_ update: Data) {
-        guard let delegate = updateDelegate else { return }
-
         // 解析 TDLib 更新 JSON
         guard let json = try? JSONSerialization.jsonObject(with: update) as? [String: Any],
               let type = json["@type"] as? String else { return }
@@ -604,7 +650,9 @@ public actor TDLibTelegramClient: TelegramClient {
                 currentTDLibState = tdState
                 let newState = map(authorizationState: tdState)
                 self.state = newState
-                Task { @MainActor in delegate.didUpdateAuthorizationState(newState) }
+                if let delegate = updateDelegate {
+                    Task { @MainActor in delegate.didUpdateAuthorizationState(newState) }
+                }
             }
 
         case "updateChatFolders":
@@ -620,7 +668,9 @@ public actor TDLibTelegramClient: TelegramClient {
                     return ChatFolder(id: id, title: title)
                 }
                 cachedFolders = parsedFolders
-                Task { @MainActor in delegate.didUpdateChatFolders(parsedFolders) }
+                if let delegate = updateDelegate {
+                    Task { @MainActor in delegate.didUpdateChatFolders(parsedFolders) }
+                }
             }
 
         case "updateAuthenticationCode":
@@ -646,21 +696,27 @@ public actor TDLibTelegramClient: TelegramClient {
                 date: Foundation.Date(timeIntervalSince1970: TimeInterval(date)),
                 isOutgoing: isOutgoing
             )
-            Task { @MainActor in delegate.didReceiveNewMessage(message) }
+            if let delegate = updateDelegate {
+                Task { @MainActor in delegate.didReceiveNewMessage(message) }
+            }
 
         case "updateChatLastMessage":
             // 聊天的最后一条消息变更
             guard let chatId = json["chat_id"] as? Int64 else { return }
             if let tdChat = cachedChats[chatId] {
                 let mapped = map(chat: tdChat)
-                Task { @MainActor in delegate.didUpdateChat(mapped) }
+                if let delegate = updateDelegate {
+                    Task { @MainActor in delegate.didUpdateChat(mapped) }
+                }
             }
 
         case "updateChatReadInbox":
             // 收件箱已读回执
             guard let chatId = json["chat_id"] as? Int64,
                   let unreadCount = json["unread_count"] as? Int else { return }
-            Task { @MainActor in delegate.didUpdateUnreadCount(chatID: chatId, unreadCount: unreadCount) }
+            if let delegate = updateDelegate {
+                Task { @MainActor in delegate.didUpdateUnreadCount(chatID: chatId, unreadCount: unreadCount) }
+            }
 
         case "updateMessageContent":
             // 消息内容被编辑
@@ -671,7 +727,9 @@ public actor TDLibTelegramClient: TelegramClient {
                   contentType == "messageText",
                   let textObj = newContent["text"] as? [String: Any],
                   let newText = textObj["text"] as? String else { return }
-            Task { @MainActor in delegate.didUpdateMessageContent(chatID: chatId, messageID: messageId, newText: newText) }
+            if let delegate = updateDelegate {
+                Task { @MainActor in delegate.didUpdateMessageContent(chatID: chatId, messageID: messageId, newText: newText) }
+            }
 
         case "updateDeleteMessages":
             // 消息被删除
@@ -679,7 +737,9 @@ public actor TDLibTelegramClient: TelegramClient {
                   let messageIds = json["message_ids"] as? [Int64],
                   let isPermanent = json["is_permanent"] as? Bool,
                   isPermanent else { return }
-            Task { @MainActor in delegate.didDeleteMessages(chatID: chatId, messageIDs: messageIds) }
+            if let delegate = updateDelegate {
+                Task { @MainActor in delegate.didDeleteMessages(chatID: chatId, messageIDs: messageIds) }
+            }
 
         default:
             break

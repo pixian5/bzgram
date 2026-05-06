@@ -13,6 +13,7 @@ public final class ContactService: ObservableObject {
     private let accountManager: AccountManager
     private var contacts: [Contact] = []
     private var contactsByID: [Int64: Contact] = [:]
+    public private(set) var lastErrorMessage: String?
 
     /// 注入 AccountManager 以实现动态客户端切换
     public init(accountManager: AccountManager) {
@@ -25,9 +26,12 @@ public final class ContactService: ObservableObject {
     public func fetchContacts() async -> [Contact] {
         do {
             let fetched = try await client.fetchContacts()
+            lastErrorMessage = nil
             updateContacts(fetched)
             return contacts.sorted { $0.displayName < $1.displayName }
         } catch {
+            lastErrorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            print("❌ [BZGram] fetchContacts failed: \(lastErrorMessage ?? "unknown error")")
             // TDLib 获取失败时返回本地缓存
             return contacts.sorted { $0.displayName < $1.displayName }
         }

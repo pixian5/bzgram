@@ -59,7 +59,7 @@ public struct ContactListView: View {
                 viewModel.searchQuery.isEmpty ? "暂无联系人" : "未找到联系人",
                 systemImage: "person.crop.circle.badge.questionmark",
                 description: Text(viewModel.searchQuery.isEmpty
-                    ? "你的 Telegram 联系人会显示在这里。"
+                    ? (viewModel.errorMessage ?? "你的 Telegram 联系人会显示在这里。")
                     : "尝试其他搜索关键词。")
             )
         } else {

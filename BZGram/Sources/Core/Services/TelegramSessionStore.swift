@@ -111,8 +111,8 @@ public final class TelegramSessionStore: ObservableObject {
 
     public func refreshChats(folderId: Int? = nil) async {
         await perform { [self] in
-            self.folders = try await self.client.fetchFolders()
             self.chats = try await self.client.fetchChats(folderId: folderId)
+            self.folders = try await self.client.fetchFolders()
             self.sortChats()
         }
     }
