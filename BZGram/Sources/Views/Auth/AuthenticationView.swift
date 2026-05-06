@@ -94,7 +94,7 @@ public struct AuthenticationView: View {
                 .foregroundStyle(.secondary)
             TextField("86 138 0013 8000", text: $phoneNumber)
                 .textContentType(.telephoneNumber)
-                .keyboardType(.numberPad) // 强制数字键盘
+                .keyboardType(.default) // 改为默认键盘，支持用户自定义键盘（搜狗等）
                 .textFieldStyle(.roundedBorder)
                 .focused($focusedField, equals: .phone)
             Button {
@@ -125,7 +125,7 @@ public struct AuthenticationView: View {
                 .font(.subheadline)
             }
             TextField("验证码", text: $verificationCode)
-                .keyboardType(.numberPad) // 强制数字键盘
+                .keyboardType(.default) // 支持用户自定义数字键盘
                 .textFieldStyle(.roundedBorder)
                 .focused($focusedField, equals: .code)
             HStack {
