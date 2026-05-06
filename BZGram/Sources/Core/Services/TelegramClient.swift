@@ -65,7 +65,8 @@ public protocol TelegramClient: Sendable {
     func logOut() async -> TelegramAuthorizationState
 
     // MARK: - 聊天
-    func fetchChats() async throws -> [Chat]
+    func fetchChats(folderId: Int?) async throws -> [Chat]
+    func fetchFolders() async throws -> [ChatFolder]
     func fetchMessages(in chatID: Int64) async throws -> [Message]
     func sendMessage(_ text: String, to chatID: Int64) async throws -> Message
     func sendPhoto(filePath: String, caption: String, to chatID: Int64) async throws -> Message
@@ -105,4 +106,6 @@ public extension TelegramClient {
     func searchMessages(query: String, in chatID: Int64, limit: Int) async throws -> [Message] { [] }
     func fetchContacts() async throws -> [Contact] { [] }
     func downloadFile(remoteFileId: String) async throws -> String { "" }
+    func fetchChats(folderId: Int? = nil) async throws -> [Chat] { [] }
+    func fetchFolders() async throws -> [ChatFolder] { [] }
 }

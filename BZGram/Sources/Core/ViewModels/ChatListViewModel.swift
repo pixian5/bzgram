@@ -13,6 +13,8 @@ public final class ChatListViewModel: ObservableObject {
     @Published public var showTranslatedOnly: Bool = false
     @Published public var showMutedOnly: Bool = false
     @Published public var showPinnedOnly: Bool = false
+    @Published public var selectedFolderId: Int? = nil
+    @Published public var folders: [ChatFolder] = []
 
     private let settingsStore: SettingsStore
     private let sessionStore: TelegramSessionStore
@@ -91,7 +93,17 @@ public final class ChatListViewModel: ObservableObject {
 
     public func loadChats(for account: Account) async {
         isLoading = true
-        await sessionStore.refreshChats()
+        await sessionStore.refreshChats(folderId: selectedFolderId)
+        chats = sessionStore.chats
+        folders = sessionStore.folders
+        isLoading = false
+    }
+    
+    public func selectFolder(_ folderId: Int?) async {
+        guard selectedFolderId != folderId else { return }
+        selectedFolderId = folderId
+        isLoading = true
+        await sessionStore.refreshChats(folderId: folderId)
         chats = sessionStore.chats
         isLoading = false
     }

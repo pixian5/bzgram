@@ -14,6 +14,7 @@ public actor TDLibTelegramClient: TelegramClient {
     private var currentTelegramUser: TelegramUser?
     private var cachedUsers: [Int64: User] = [:]
     private var cachedChats: [Int64: TDLibKit.Chat] = [:]
+    private var cachedFolders: [ChatFolder] = []
     /// 临时保存正在登录的手机号
     private var pendingPhoneNumber: String?
     /// 实时更新委托
@@ -140,16 +141,28 @@ public actor TDLibTelegramClient: TelegramClient {
         currentTelegramUser = nil
         cachedUsers = [:]
         cachedChats = [:]
+        cachedFolders = []
         rebuildClient()
         state = .waitingForPhoneNumber
         currentTDLibState = .authorizationStateWaitTdlibParameters
         return state
     }
 
-    public func fetchChats() async throws -> [Chat] {
+    public func fetchFolders() async throws -> [ChatFolder] {
+        try await ensureAuthorized()
+        return cachedFolders
+    }
+
+    public func fetchChats(folderId: Int? = nil) async throws -> [Chat] {
         try await ensureAuthorized()
 
-        let ids = try await client.getChats(chatList: .chatListMain, limit: 100).chatIds
+        let chatList: TDLibKit.ChatList?
+        if let id = folderId {
+            chatList = .chatListFolder(TDLibKit.ChatListFolder(chatFolderId: id))
+        } else {
+            chatList = .chatListMain
+        }
+        let ids = try await client.getChats(chatList: chatList, limit: 100).chatIds
         var chats: [Chat] = []
         chats.reserveCapacity(ids.count)
 
@@ -444,9 +457,7 @@ public actor TDLibTelegramClient: TelegramClient {
     }
 
     private func map(message tdMessage: TDLibKit.Message) async throws -> Message? {
-        guard let text = extractText(from: tdMessage.content) else {
-            return nil
-        }
+        let (text, contentType) = extractContent(from: tdMessage.content)
 
         let senderName = try await senderName(for: tdMessage)
         return Message(
@@ -455,16 +466,33 @@ public actor TDLibTelegramClient: TelegramClient {
             senderName: senderName,
             originalText: text,
             date: date(fromUnixTimestamp: tdMessage.date) ?? Foundation.Date(),
-            isOutgoing: tdMessage.isOutgoing
+            isOutgoing: tdMessage.isOutgoing,
+            contentType: contentType
         )
     }
 
-    private func extractText(from content: MessageContent) -> String? {
+    private func extractContent(from content: MessageContent) -> (String, MessageContentType) {
         switch content {
         case .messageText(let messageText):
-            return messageText.text.text
+            return (messageText.text.text, .text)
+        case .messagePhoto(let messagePhoto):
+            return (messagePhoto.caption.text.isEmpty ? "[图片]" : messagePhoto.caption.text, .photo)
+        case .messageVideo(let messageVideo):
+            return (messageVideo.caption.text.isEmpty ? "[视频]" : messageVideo.caption.text, .video)
+        case .messageDocument(let messageDocument):
+            return (messageDocument.caption.text.isEmpty ? "[文件]" : messageDocument.caption.text, .document)
+        case .messageSticker(let sticker):
+            return (sticker.sticker.emoji.isEmpty ? "[贴纸]" : sticker.sticker.emoji, .sticker)
+        case .messageVoiceNote:
+            return ("[语音]", .voice)
+        case .messageAnimation:
+            return ("[GIF]", .animation)
+        case .messageLocation:
+            return ("[位置]", .location)
+        case .messageContact:
+            return ("[联系人]", .contact)
         default:
-            return nil
+            return ("[未知消息]", .unsupported)
         }
     }
 
@@ -554,6 +582,15 @@ public actor TDLibTelegramClient: TelegramClient {
                 let newState = map(authorizationState: tdState)
                 self.state = newState
                 Task { @MainActor in delegate.didUpdateAuthorizationState(newState) }
+            }
+
+        case "updateChatFolders":
+            if let folders = json["chat_folders"] as? [[String: Any]] {
+                cachedFolders = folders.compactMap { dict in
+                    guard let id = dict["id"] as? Int,
+                          let title = dict["title"] as? String else { return nil }
+                    return ChatFolder(id: id, title: title)
+                }
             }
 
         case "updateAuthenticationCode":

@@ -15,14 +15,24 @@ public struct ChatListView: View {
 
     public var body: some View {
         NavigationStack {
-            Group {
-                if viewModel.isLoading && viewModel.chats.isEmpty {
-                    loadingState
-                } else if viewModel.filteredChats.isEmpty {
-                    emptyState
-                } else {
-                    chatList
+            VStack(spacing: 0) {
+                if !viewModel.folders.isEmpty {
+                    folderTabs
+                        .padding(.vertical, 8)
+                        .background(Color(.systemBackground))
+                    Divider()
                 }
+                
+                Group {
+                    if viewModel.isLoading && viewModel.chats.isEmpty {
+                        loadingState
+                    } else if viewModel.filteredChats.isEmpty {
+                        emptyState
+                    } else {
+                        chatList
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .navigationTitle(accountManager.activeAccount?.displayName ?? "聊天")
             .searchable(text: $viewModel.searchQuery, prompt: "搜索聊天")
@@ -40,9 +50,42 @@ public struct ChatListView: View {
             }
             .refreshable {
                 guard accountManager.activeAccount != nil else { return }
-                await sessionStore.refreshChats()
+                await sessionStore.refreshChats(folderId: viewModel.selectedFolderId)
                 viewModel.chats = sessionStore.chats
+                viewModel.folders = sessionStore.folders
             }
+        }
+    }
+
+    // MARK: - 文件夹标签
+
+    private var folderTabs: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 12) {
+                folderTab(id: nil, title: "全部聊天")
+                ForEach(viewModel.folders) { folder in
+                    folderTab(id: folder.id, title: folder.title)
+                }
+            }
+            .padding(.horizontal)
+        }
+    }
+    
+    private func folderTab(id: Int?, title: String) -> some View {
+        let isSelected = viewModel.selectedFolderId == id
+        return Button {
+            Task {
+                await viewModel.selectFolder(id)
+            }
+        } label: {
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(isSelected ? .semibold : .regular)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(isSelected ? Color.accentColor : Color(.systemGray6))
+                .foregroundColor(isSelected ? .white : .primary)
+                .clipShape(Capsule())
         }
     }
 

@@ -12,6 +12,7 @@ public final class TelegramSessionStore: ObservableObject {
     @Published public private(set) var authorizationState: TelegramAuthorizationState = .waitingForPhoneNumber
     @Published public private(set) var currentUser: TelegramUser?
     @Published public private(set) var chats: [Chat] = []
+    @Published public private(set) var folders: [ChatFolder] = []
     @Published public private(set) var messagesByChatID: [Int64: [Message]] = [:]
     @Published public private(set) var isBusy: Bool = false
     @Published public var lastErrorMessage: String?
@@ -98,6 +99,7 @@ public final class TelegramSessionStore: ObservableObject {
         authorizationState = await client.logOut()
         currentUser = nil
         chats = []
+        folders = []
         messagesByChatID = [:]
         if let active = accountManager.activeAccount {
             accountManager.logout(active.id)
@@ -107,9 +109,10 @@ public final class TelegramSessionStore: ObservableObject {
 
     // MARK: - 聊天操作
 
-    public func refreshChats() async {
+    public func refreshChats(folderId: Int? = nil) async {
         await perform { [self] in
-            self.chats = try await self.client.fetchChats()
+            self.folders = try await self.client.fetchFolders()
+            self.chats = try await self.client.fetchChats(folderId: folderId)
             self.sortChats()
         }
     }

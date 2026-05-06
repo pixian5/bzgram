@@ -36,6 +36,7 @@
 		9E4915EEA2E68F222E872247 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2C4AC71001B64829ADD770C /* Message.swift */; };
 		A15D0957175AF1D1FEFA3E3E /* ChatListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC99167788628B78E35E1709 /* ChatListViewModel.swift */; };
 		A185CD944C060A6A73B544AC /* TelegramAPIConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 105B81349DA6D5B9F451D949 /* TelegramAPIConfiguration.swift */; };
+		A257F90C359147F0A54D8250 /* ChatFolder.swift in Sources */ = {isa = PBXBuildFile; fileRef = E93BB2374D08E6C2DC38EDD5 /* ChatFolder.swift */; };
 		A2B4A875332F444614E3AEE8 /* GlobalSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DAAA48D16DF7830160CFAF5 /* GlobalSettingsView.swift */; };
 		A2F5264244776B7D14B7008C /* TranslationSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A6F8EAF3DB6E0D394F983A /* TranslationSettings.swift */; };
 		A4C3EAF922062B8038284335 /* ChatSummaryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7F021308C1DF13EE45DB26 /* ChatSummaryService.swift */; };
@@ -138,6 +139,7 @@
 		D77508CF6F8B5938DABB77DF /* ChatModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatModelTests.swift; sourceTree = "<group>"; };
 		DC99167788628B78E35E1709 /* ChatListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatListViewModel.swift; sourceTree = "<group>"; };
 		E1A6F8EAF3DB6E0D394F983A /* TranslationSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationSettings.swift; sourceTree = "<group>"; };
+		E93BB2374D08E6C2DC38EDD5 /* ChatFolder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatFolder.swift; sourceTree = "<group>"; };
 		ECEC2084BA61575C555A4020 /* BZGram.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BZGram.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F1408439CC14C2F901EC9C2B /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		F7BA5180717D7FCE0182C3B2 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
@@ -209,6 +211,7 @@
 				1D76342683DBDDDF1E590862 /* Account.swift */,
 				0441B82DDFC481B14E3975B3 /* AppSettings.swift */,
 				771319B310FFEFB26B85F8B3 /* Chat.swift */,
+				E93BB2374D08E6C2DC38EDD5 /* ChatFolder.swift */,
 				763F52DE3F234ED7F640AACA /* ChatSummary.swift */,
 				D357A77D3F622CE25626CD0C /* Contact.swift */,
 				D2C4AC71001B64829ADD770C /* Message.swift */,
@@ -495,6 +498,7 @@
 				D1ED85C3088980A70BDE2C3A /* AccountManager.swift in Sources */,
 				8DFB9C9EAF799130085CD347 /* AppSettings.swift in Sources */,
 				3301DAC931185210551C565F /* Chat.swift in Sources */,
+				A257F90C359147F0A54D8250 /* ChatFolder.swift in Sources */,
 				A15D0957175AF1D1FEFA3E3E /* ChatListViewModel.swift in Sources */,
 				D1D6233B4AEF69CF2EC4D8FB /* ChatSummary.swift in Sources */,
 				A4C3EAF922062B8038284335 /* ChatSummaryService.swift in Sources */,
@@ -589,7 +593,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 32;
+				CURRENT_PROJECT_VERSION = 33;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 2P5Z4JVY8W;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -603,7 +607,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.0.26;
+				MARKETING_VERSION = 1.0.27;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -694,7 +698,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 32;
+				CURRENT_PROJECT_VERSION = 33;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 2P5Z4JVY8W;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -714,7 +718,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.0.26;
+				MARKETING_VERSION = 1.0.27;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

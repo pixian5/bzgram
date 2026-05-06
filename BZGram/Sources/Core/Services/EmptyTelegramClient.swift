@@ -35,7 +35,11 @@ public final class EmptyTelegramClient: TelegramClient {
         return .waitingForPhoneNumber
     }
     
-    public func fetchChats() async throws -> [Chat] {
+    public func fetchChats(folderId: Int? = nil) async throws -> [Chat] {
+        return []
+    }
+    
+    public func fetchFolders() async throws -> [ChatFolder] {
         return []
     }
     
