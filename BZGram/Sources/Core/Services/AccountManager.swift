@@ -27,6 +27,7 @@ public final class AccountManager {
     /// Cached TelegramClient for the initial "no accounts yet" login flow.
     /// Using a single cached instance prevents multiple TDLib processes from
     /// contending over the same database directory.
+    /// Set to `nil` after a successful login via `transferGuestSession(to:)`.
     private var guestClient: TelegramClient?
 
     /// True while a guest-session client is active (i.e. first-time login is in progress).
@@ -178,7 +179,9 @@ public final class AccountManager {
         if guestClient == nil {
             guestClient = TelegramClientFactory.makeDefaultClient(instanceId: "guest_session")
         }
-        return guestClient!
+        // guestClient is guaranteed non-nil after the guard above.
+        guard let guest = guestClient else { return EmptyTelegramClient() }
+        return guest
     }
 
     /// 登录完成后，将 guest-session 客户端迁移到正式账号。

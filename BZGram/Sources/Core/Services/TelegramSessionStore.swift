@@ -368,6 +368,8 @@ public final class TelegramSessionStore: ObservableObject {
             accountManager.markAuthenticated(existing.id, telegramUserID: user.id, displayName: user.displayName)
             // Adopt the guest-session TDLib client (if present) so that the authenticated
             // in-memory state and on-disk database are used for all subsequent calls.
+            // `transferGuestSession` is a no-op when no guest client exists, so it is
+            // safe to call unconditionally.
             accountManager.transferGuestSession(to: existing.id)
             if let refreshed = accountManager.accounts.first(where: { $0.id == existing.id }) {
                 accountManager.setActive(refreshed)
