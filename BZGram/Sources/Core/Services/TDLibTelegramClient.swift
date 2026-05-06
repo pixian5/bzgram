@@ -92,11 +92,11 @@ public actor TDLibTelegramClient: TelegramClient {
         try await ensureInitialized()
         do {
             try await client.checkAuthenticationCode(code: trimmed)
+            try await refreshAuthorizationState()
         } catch {
             throw map(error: error)
         }
 
-        try await refreshAuthorizationState()
         if case .ready = state {
             currentTelegramUser = try? await fetchCurrentUser()
         }
@@ -112,11 +112,11 @@ public actor TDLibTelegramClient: TelegramClient {
         try await ensureInitialized()
         do {
             try await client.checkAuthenticationPassword(password: trimmed)
+            try await refreshAuthorizationState()
         } catch {
             throw map(error: error)
         }
 
-        try await refreshAuthorizationState()
         if case .ready = state {
             currentTelegramUser = try? await fetchCurrentUser()
         }
