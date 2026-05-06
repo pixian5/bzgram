@@ -5,7 +5,7 @@ import BZGramCore
 /// 对话详情视图（消息收发 + 翻译 + 编辑 + 长按菜单）
 public struct ChatView: View {
 
-    @ObservedObject var viewModel: ChatViewModel
+    @StateObject var viewModel: ChatViewModel
     @ObservedObject var chatListViewModel: ChatListViewModel
     @State private var showTranslationSettings = false
     @State private var showSummarySheet = false
@@ -13,7 +13,7 @@ public struct ChatView: View {
     @Environment(\.colorScheme) private var colorScheme
 
     public init(viewModel: ChatViewModel, chatListViewModel: ChatListViewModel) {
-        self.viewModel = viewModel
+        _viewModel = StateObject(wrappedValue: viewModel)
         self.chatListViewModel = chatListViewModel
     }
 

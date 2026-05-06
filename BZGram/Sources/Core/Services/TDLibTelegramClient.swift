@@ -243,16 +243,16 @@ public actor TDLibTelegramClient: TelegramClient {
             print("❌ [BZGram] openChat error: \(error)")
         }
 
-        let history = try await client.getChatHistory(
-            chatId: chatID,
-            fromMessageId: 0,
-            limit: 100,
-            offset: 0,
-            onlyLocal: false
-        )
-
-        let tdMessages = history.messages ?? []
+        var tdMessages = await loadHistory(chatID: chatID, fromMessageId: 0)
         print("🚀 [BZGram] getChatHistory returned \(tdMessages.count) messages")
+
+        if tdMessages.isEmpty,
+           let chat = try? await client.getChat(chatId: chatID),
+           let lastMessage = chat.lastMessage {
+            cachedChats[chat.id] = chat
+            tdMessages = await loadHistory(chatID: chatID, fromMessageId: lastMessage.id)
+            print("🚀 [BZGram] getChatHistory from lastMessage returned \(tdMessages.count) messages")
+        }
 
         if tdMessages.isEmpty, let fallback = await fallbackLastMessage(in: chatID) {
             print("⚠️ [BZGram] History empty; using last message fallback")
@@ -267,6 +267,11 @@ public actor TDLibTelegramClient: TelegramClient {
             } else {
                 print("⚠️ [BZGram] Failed to map message: \(tdMessage)")
             }
+        }
+
+        if mapped.isEmpty, let fallback = await fallbackLastMessage(in: chatID) {
+            print("⚠️ [BZGram] No mapped history messages; using last message fallback")
+            return [fallback]
         }
 
         print("🚀 [BZGram] successfully mapped \(mapped.count) messages")
@@ -613,6 +618,22 @@ public actor TDLibTelegramClient: TelegramClient {
             return mapped
         }
         return await map(message: lastMessage)
+    }
+
+    private func loadHistory(chatID: Int64, fromMessageId: Int64) async -> [TDLibKit.Message] {
+        do {
+            let history = try await client.getChatHistory(
+                chatId: chatID,
+                fromMessageId: fromMessageId,
+                limit: 100,
+                offset: 0,
+                onlyLocal: false
+            )
+            return history.messages ?? []
+        } catch {
+            print("❌ [BZGram] getChatHistory error chatID=\(chatID), fromMessageId=\(fromMessageId): \(error)")
+            return []
+        }
     }
 
     private func position(for chatID: Int64, in chatList: TDLibKit.ChatList) -> TDLibKit.ChatPosition? {

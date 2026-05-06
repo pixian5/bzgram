@@ -4,13 +4,13 @@ import BZGramCore
 /// 聊天列表视图，支持搜索、过滤、右滑操作
 public struct ChatListView: View {
 
-    @ObservedObject var viewModel: ChatListViewModel
+    @StateObject var viewModel: ChatListViewModel
     @EnvironmentObject private var accountManager: AccountManager
     @EnvironmentObject private var settingsStore: SettingsStore
     @EnvironmentObject private var sessionStore: TelegramSessionStore
 
     public init(viewModel: ChatListViewModel) {
-        self.viewModel = viewModel
+        _viewModel = StateObject(wrappedValue: viewModel)
     }
 
     public var body: some View {

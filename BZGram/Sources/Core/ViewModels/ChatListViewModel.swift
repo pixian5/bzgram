@@ -120,6 +120,7 @@ public final class ChatListViewModel: ObservableObject {
         showMutedOnly = false
         showPinnedOnly = false
         isLoading = true
+        chats = []
         await sessionStore.refreshChats(folderId: folderId)
         chats = sessionStore.chats
         folders = sessionStore.folders

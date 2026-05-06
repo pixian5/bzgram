@@ -44,6 +44,9 @@ public final class ChatViewModel: ObservableObject {
         errorMessage = nil
         await sessionStore.loadMessages(for: chat.id)
         let raw = sessionStore.messages(for: chat.id)
+        if raw.isEmpty, let err = sessionStore.lastErrorMessage {
+            errorMessage = err
+        }
         let settings = effectiveSettings
         if settings.autoTranslateEnabled {
             messages = await translationService.translateMessages(raw, settings: settings)
