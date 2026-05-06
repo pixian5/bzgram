@@ -127,7 +127,7 @@
 		8D0D8A8BE3081D0BDFAEB570 /* AccountListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountListView.swift; sourceTree = "<group>"; };
 		8DAAA48D16DF7830160CFAF5 /* GlobalSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalSettingsView.swift; sourceTree = "<group>"; };
 		8FB12EECB0690AD1DE63FEFC /* TelegramUser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramUser.swift; sourceTree = "<group>"; };
-		9E0087D490B0FC73F9EAC21D /* BZGramTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BZGramTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9E0087D490B0FC73F9EAC21D /* BZGramTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = BZGramTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A082796E780644F9EE141677 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		A1E0841CA358C457DF05DC0A /* ChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatViewModel.swift; sourceTree = "<group>"; };
 		A9E5A46A3DE2CA8E200E076E /* ServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceTests.swift; sourceTree = "<group>"; };
@@ -142,7 +142,7 @@
 		DC99167788628B78E35E1709 /* ChatListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatListViewModel.swift; sourceTree = "<group>"; };
 		E1A6F8EAF3DB6E0D394F983A /* TranslationSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationSettings.swift; sourceTree = "<group>"; };
 		E3CDCDDE752067BACD92BA58 /* MockTelegramClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockTelegramClient.swift; sourceTree = "<group>"; };
-		ECEC2084BA61575C555A4020 /* BZGram.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BZGram.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		ECEC2084BA61575C555A4020 /* BZGram.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BZGram.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F1408439CC14C2F901EC9C2B /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		F7BA5180717D7FCE0182C3B2 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
 		FBE289304AD7A7CDF56C9F31 /* TelegramClientFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramClientFactory.swift; sourceTree = "<group>"; };
@@ -457,15 +457,18 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 2640;
+				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					2CD1FE95BC180CB5BF2FCA55 = {
+						DevelopmentTeam = 2P5Z4JVY8W;
 						ProvisioningStyle = Automatic;
 					};
 					3F74CFED0FA193CBD3B71561 = {
+						DevelopmentTeam = 2P5Z4JVY8W;
 						ProvisioningStyle = Automatic;
 					};
 					E2D179455F293BFF3B5618F9 = {
+						DevelopmentTeam = 2P5Z4JVY8W;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -615,7 +618,6 @@
 				DEVELOPMENT_TEAM = 2P5Z4JVY8W;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -638,7 +640,6 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.9;
@@ -651,17 +652,14 @@
 				CODE_SIGN_IDENTITY = "";
 				CURRENT_PROJECT_VERSION = 1;
 				DEFINES_MODULE = YES;
-				DEVELOPMENT_TEAM = PSTNW3UN4R;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				ENABLE_MODULE_VERIFIER = YES;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu11 gnu++14";
 				PRODUCT_BUNDLE_IDENTIFIER = com.pixian5.bzgram.core;
 				PRODUCT_MODULE_NAME = BZGramCore;
 				PRODUCT_NAME = BZGramCore;
@@ -677,9 +675,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = PSTNW3UN4R;
-				INFOPLIST_KEY_BZGRAM_TELEGRAM_API_HASH = "";
-				INFOPLIST_KEY_BZGRAM_TELEGRAM_API_ID = "";
+				INFOPLIST_KEY_BZGRAM_TELEGRAM_API_HASH = 449cf3df8937bb8c31bdd4a610a25a5a;
+				INFOPLIST_KEY_BZGRAM_TELEGRAM_API_ID = 28071027;
 				INFOPLIST_KEY_BZGRAM_TELEGRAM_USE_TEST_DC = NO;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -735,7 +732,6 @@
 				DEVELOPMENT_TEAM = 2P5Z4JVY8W;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -765,7 +761,6 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.9;
@@ -776,7 +771,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
-				DEVELOPMENT_TEAM = PSTNW3UN4R;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -797,17 +791,14 @@
 				CODE_SIGN_IDENTITY = "";
 				CURRENT_PROJECT_VERSION = 1;
 				DEFINES_MODULE = YES;
-				DEVELOPMENT_TEAM = PSTNW3UN4R;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				ENABLE_MODULE_VERIFIER = YES;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu11 gnu++14";
 				PRODUCT_BUNDLE_IDENTIFIER = com.pixian5.bzgram.core;
 				PRODUCT_MODULE_NAME = BZGramCore;
 				PRODUCT_NAME = BZGramCore;
@@ -822,7 +813,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
-				DEVELOPMENT_TEAM = PSTNW3UN4R;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -842,9 +832,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = PSTNW3UN4R;
-				INFOPLIST_KEY_BZGRAM_TELEGRAM_API_HASH = "";
-				INFOPLIST_KEY_BZGRAM_TELEGRAM_API_ID = "";
+				INFOPLIST_KEY_BZGRAM_TELEGRAM_API_HASH = 449cf3df8937bb8c31bdd4a610a25a5a;
+				INFOPLIST_KEY_BZGRAM_TELEGRAM_API_ID = 28071027;
 				INFOPLIST_KEY_BZGRAM_TELEGRAM_USE_TEST_DC = NO;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
