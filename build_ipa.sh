@@ -24,6 +24,7 @@ echo "📈 版本号已更新：Build -> $NEW_BUILD, Version -> $NEW_MARKETING"
 
 echo "🔄 正在同步工程配置 (xcodegen)..."
 rm -rf BuildOutput
+rm -rf Builds/*.tipa
 xcodegen generate
 
 echo "🚀 开始编译 BZGram (Release)..."

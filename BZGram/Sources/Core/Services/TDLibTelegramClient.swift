@@ -117,12 +117,11 @@ public actor TDLibTelegramClient: TelegramClient {
         }
 
         try await ensureInitialized()
-        do {
-            try await client.checkAuthenticationPassword(password: trimmed)
-            try await refreshAuthorizationState()
-        } catch {
-            throw map(error: error)
-        }
+        
+        // 采用与 submitCode 相同的逻辑：忽略直接报错，通过 refreshAuthorizationState 捕获真实状态
+        // 解决密码正确却提示不正确的问题
+        _ = try? await client.checkAuthenticationPassword(password: trimmed)
+        try await refreshAuthorizationState()
 
         if case .ready = state {
             currentTelegramUser = try? await fetchCurrentUser()

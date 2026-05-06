@@ -9,6 +9,12 @@ public struct AuthenticationView: View {
     @State private var verificationCode = ""
     @State private var password = ""
 
+    /// 输入框焦点管理
+    enum Field: Hashable {
+        case phone, code, password
+    }
+    @FocusState private var focusedField: Field?
+
     public init() {}
 
     public var body: some View {
@@ -28,6 +34,29 @@ public struct AuthenticationView: View {
             .task {
                 if !sessionStore.isAuthorized {
                     await sessionStore.start()
+                    // 初始聚焦手机号
+                    if sessionStore.authorizationState == .waitingForPhoneNumber {
+                        focusedField = .phone
+                    }
+                }
+            }
+            .onChange(of: sessionStore.authorizationState) { newState in
+                // 状态变更时自动切换焦点
+                switch newState {
+                case .waitingForPhoneNumber:
+                    focusedField = .phone
+                case .waitingForCode:
+                    focusedField = .code
+                    verificationCode = "" // 进入验证码页清空旧验证码
+                case .waitingForPassword:
+                    focusedField = .password
+                    password = ""
+                case .ready:
+                    focusedField = nil
+                    // 登录成功清空手机号
+                    phoneNumber = ""
+                default:
+                    break
                 }
             }
         }
@@ -37,7 +66,7 @@ public struct AuthenticationView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Telegram 登录")
                 .font(.largeTitle.bold())
-            Text("没有配置 Telegram API 参数时会自动使用演示后端，默认验证码是 12345。配置完成后会自动切换到真实 TDLib 登录。")
+            Text("请确保已配置 Telegram API 参数，否则登录将无法连接。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -65,7 +94,9 @@ public struct AuthenticationView: View {
                 .foregroundStyle(.secondary)
             TextField("86 138 0013 8000", text: $phoneNumber)
                 .textContentType(.telephoneNumber)
+                .keyboardType(.numberPad) // 强制数字键盘
                 .textFieldStyle(.roundedBorder)
+                .focused($focusedField, equals: .phone)
             Button {
                 Task { await sessionStore.submitPhoneNumber(phoneNumber) }
             } label: {
@@ -78,16 +109,25 @@ public struct AuthenticationView: View {
                 }
             }
             .buttonStyle(.borderedProminent)
-            .disabled(sessionStore.isBusy)
+            .disabled(sessionStore.isBusy || phoneNumber.isEmpty)
         }
     }
 
     private func codeForm(phoneNumber: String) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("验证码已发送到 \(phoneNumber)，请查收。")
-                .foregroundStyle(.secondary)
-            TextField("12345", text: $verificationCode)
+            HStack {
+                Text("验证码已发送到 \(phoneNumber)")
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button("返回修改") {
+                    sessionStore.backToPhoneNumber()
+                }
+                .font(.subheadline)
+            }
+            TextField("验证码", text: $verificationCode)
+                .keyboardType(.numberPad) // 强制数字键盘
                 .textFieldStyle(.roundedBorder)
+                .focused($focusedField, equals: .code)
             HStack {
                 Button {
                     Task { await sessionStore.submitCode(verificationCode) }
@@ -117,10 +157,22 @@ public struct AuthenticationView: View {
 
     private func passwordForm(hint: String?) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(hint ?? "请输入你的 Telegram 两步验证密码。")
-                .foregroundStyle(.secondary)
+            HStack {
+                Text(hint ?? "请输入你的两步验证密码")
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button("返回修改") {
+                    sessionStore.backToPhoneNumber()
+                }
+                .font(.subheadline)
+            }
             SecureField("密码", text: $password)
                 .textFieldStyle(.roundedBorder)
+                .focused($focusedField, equals: .password)
+                .submitLabel(.done)
+                .onSubmit {
+                    Task { await sessionStore.submitPassword(password) }
+                }
             Button {
                 Task { await sessionStore.submitPassword(password) }
             } label: {
@@ -133,7 +185,7 @@ public struct AuthenticationView: View {
                 }
             }
             .buttonStyle(.borderedProminent)
-            .disabled(sessionStore.isBusy)
+            .disabled(sessionStore.isBusy || password.isEmpty)
         }
     }
 
@@ -141,7 +193,8 @@ public struct AuthenticationView: View {
         VStack(alignment: .leading, spacing: 12) {
             Label("已登录：\(sessionStore.currentUser?.displayName ?? "Telegram 用户")", systemImage: "checkmark.circle.fill")
                 .foregroundStyle(.green)
-            Text("认证完成。现在可以进入聊天、账号管理和设置页面。")
+            Text("认证完成。现在可以进入聊天和设置。")
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
     }

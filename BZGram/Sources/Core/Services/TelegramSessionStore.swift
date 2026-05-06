@@ -59,6 +59,11 @@ public final class TelegramSessionStore: ObservableObject {
         }
     }
 
+    /// 返回手机号输入页面，不清除已输入内容
+    public func backToPhoneNumber() {
+        authorizationState = .waitingForPhoneNumber
+    }
+
     public func submitCode(_ code: String) async {
         await perform { [self] in
             self.authorizationState = try await self.client.submitCode(code)
