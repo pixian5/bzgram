@@ -70,6 +70,8 @@ public final class TelegramSessionStore: ObservableObject {
             if case .ready = self.authorizationState {
                 self.currentUser = await self.client.currentUser()
                 self.syncAuthorizedAccount()
+                // 给 TDLib 极短的时间完成状态切换
+                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s
                 await self.refreshChats()
             }
         }
@@ -78,9 +80,15 @@ public final class TelegramSessionStore: ObservableObject {
     public func submitPassword(_ password: String) async {
         await perform { [self] in
             self.authorizationState = try await self.client.submitPassword(password)
-            self.currentUser = await self.client.currentUser()
-            self.syncAuthorizedAccount()
-            await self.refreshChats()
+            
+            // 只有状态真正变为 ready 时才进行后续操作
+            if case .ready = self.authorizationState {
+                self.currentUser = await self.client.currentUser()
+                self.syncAuthorizedAccount()
+                // 给 TDLib 极短的时间完成状态切换
+                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s
+                await self.refreshChats()
+            }
         }
     }
 
