@@ -125,7 +125,8 @@ public struct AuthenticationView: View {
                 .font(.subheadline)
             }
             TextField("验证码", text: $verificationCode)
-                .keyboardType(.default) // 支持用户自定义数字键盘
+                .textContentType(.oneTimeCode) // 支持短信验证码自动填充
+                .keyboardType(.numbersAndPunctuation) // 诱导第三方键盘弹出数字模式
                 .textFieldStyle(.roundedBorder)
                 .focused($focusedField, equals: .code)
             HStack {
