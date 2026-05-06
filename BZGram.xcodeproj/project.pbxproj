@@ -460,15 +460,15 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					2CD1FE95BC180CB5BF2FCA55 = {
-						DevelopmentTeam = "";
+						DevelopmentTeam = 2P5Z4JVY8W;
 						ProvisioningStyle = Automatic;
 					};
 					3F74CFED0FA193CBD3B71561 = {
-						DevelopmentTeam = "";
+						DevelopmentTeam = 2P5Z4JVY8W;
 						ProvisioningStyle = Automatic;
 					};
 					E2D179455F293BFF3B5618F9 = {
-						DevelopmentTeam = "";
+						DevelopmentTeam = 2P5Z4JVY8W;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -615,7 +615,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 2P5Z4JVY8W;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -683,7 +683,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.pixian5.bzgram;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pixian5.bzgramapp;
 				PRODUCT_MODULE_NAME = BZGram;
 				PRODUCT_NAME = BZGram;
 				SDKROOT = iphoneos;
@@ -729,7 +729,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 2P5Z4JVY8W;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -840,7 +840,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.pixian5.bzgram;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pixian5.bzgramapp;
 				PRODUCT_MODULE_NAME = BZGram;
 				PRODUCT_NAME = BZGram;
 				SDKROOT = iphoneos;

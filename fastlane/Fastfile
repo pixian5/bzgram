@@ -46,6 +46,7 @@ platform :ios do
       scheme: "BZGram",
       configuration: "Release",
       export_method: "development",
+      xcargs: "-allowProvisioningUpdates",
       output_directory: "./build",
       output_name: "BZGram.ipa"
     )
