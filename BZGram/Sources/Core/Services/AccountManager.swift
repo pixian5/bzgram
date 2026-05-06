@@ -131,7 +131,7 @@ public final class AccountManager {
             return existing
         }
         guard let account = accounts.first(where: { $0.id == accountID }) else {
-            return MockTelegramClient()
+            fatalError("Account not found")
         }
         let client = createClient(for: account)
         clientInstances[accountID] = client
@@ -141,7 +141,7 @@ public final class AccountManager {
     /// 获取当前活跃账号的 TelegramClient
     public var activeClient: TelegramClient {
         guard let active = activeAccount else {
-            return MockTelegramClient()
+            fatalError("No active account")
         }
         return clientForAccount(active.id)
     }
@@ -154,13 +154,7 @@ public final class AccountManager {
     // MARK: - Private helpers
 
     private func createClient(for account: Account) -> TelegramClient {
-        guard let configuration = TelegramAPIConfiguration.load(from: .main) else {
-            return MockTelegramClient()
-        }
-        return TDLibTelegramClient(
-            configuration: configuration,
-            instanceId: account.tdlibInstanceId
-        )
+        return TelegramClientFactory.makeDefaultClient(instanceId: account.tdlibInstanceId)
     }
 
     private func update(id: UUID, mutation: (inout Account) -> Void) {

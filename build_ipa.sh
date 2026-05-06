@@ -19,10 +19,13 @@ sed -i '' "s/MARKETING_VERSION: $CURRENT_MARKETING/MARKETING_VERSION: $NEW_MARKE
 
 echo "📈 版本号已更新：Build -> $NEW_BUILD, Version -> $NEW_MARKETING"
 
+echo "🔄 正在彻底清理旧缓存 (DerivedData)..."
+rm -rf ./DerivedData
+
 echo "🔄 正在同步工程配置 (xcodegen)..."
 xcodegen generate
 
-echo "🚀 开始清理并构建 BZGram..."
+echo "🚀 开始编译 BZGram (Release)..."
 
 # 1. 强制跳过签名限制进行 Release 编译
 xcodebuild clean build \
