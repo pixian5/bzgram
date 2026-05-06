@@ -113,7 +113,6 @@ public final class TelegramSessionStore: ObservableObject {
         await perform { [self] in
             self.chats = try await self.client.fetchChats(folderId: folderId)
             self.folders = try await self.client.fetchFolders()
-            self.sortChats()
         }
     }
 
@@ -429,11 +428,7 @@ extension TelegramSessionStore: TelegramUpdateDelegate {
     public nonisolated func didUpdateChat(_ chat: Chat) {
         Task { @MainActor in
             if let index = self.chats.firstIndex(where: { $0.id == chat.id }) {
-                // 保留本地状态（置顶、静音等）
-                var updated = chat
-                updated.isPinned = self.chats[index].isPinned
-                updated.isMuted = self.chats[index].isMuted
-                self.chats[index] = updated
+                self.chats[index] = chat
             } else {
                 self.chats.append(chat)
             }

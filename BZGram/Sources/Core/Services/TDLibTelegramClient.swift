@@ -202,7 +202,7 @@ public actor TDLibTelegramClient: TelegramClient {
     public func fetchChats(folderId: Int? = nil) async throws -> [Chat] {
         try await ensureAuthorized()
 
-        let chatList: TDLibKit.ChatList?
+        let chatList: TDLibKit.ChatList
         if let id = folderId {
             chatList = .chatListFolder(TDLibKit.ChatListFolder(chatFolderId: id))
         } else {
@@ -219,11 +219,16 @@ public actor TDLibTelegramClient: TelegramClient {
         for chatID in ids {
             let tdChat = try await client.getChat(chatId: chatID)
             cachedChats[chatID] = tdChat
-            chats.append(map(chat: tdChat))
+            chats.append(map(chat: tdChat, in: chatList))
         }
 
         return chats.sorted { lhs, rhs in
-            (lhs.lastMessageDate ?? .distantPast) > (rhs.lastMessageDate ?? .distantPast)
+            let lhsPosition = position(for: lhs.id, in: chatList)
+            let rhsPosition = position(for: rhs.id, in: chatList)
+            let lhsOrder = lhsPosition?.order ?? 0
+            let rhsOrder = rhsPosition?.order ?? 0
+            if lhsOrder != rhsOrder { return lhsOrder > rhsOrder }
+            return lhs.id > rhs.id
         }
     }
 
@@ -249,18 +254,15 @@ public actor TDLibTelegramClient: TelegramClient {
         let tdMessages = history.messages ?? []
         print("🚀 [BZGram] getChatHistory returned \(tdMessages.count) messages")
 
-        if tdMessages.isEmpty,
-           let chat = try? await client.getChat(chatId: chatID),
-           let lastMessage = chat.lastMessage,
-           let message = try? await map(message: lastMessage) {
-            print("⚠️ [BZGram] History empty; using chat.lastMessage fallback")
-            return [message]
+        if tdMessages.isEmpty, let fallback = await fallbackLastMessage(in: chatID) {
+            print("⚠️ [BZGram] History empty; using last message fallback")
+            return [fallback]
         }
         
         var mapped: [Message] = []
         mapped.reserveCapacity(tdMessages.count)
         for tdMessage in tdMessages {
-            if let message = try await map(message: tdMessage) {
+            if let message = await map(message: tdMessage) {
                 mapped.append(message)
             } else {
                 print("⚠️ [BZGram] Failed to map message: \(tdMessage)")
@@ -289,7 +291,7 @@ public actor TDLibTelegramClient: TelegramClient {
         var mapped: [Message] = []
         mapped.reserveCapacity(tdMessages.count)
         for tdMessage in tdMessages {
-            if let message = try await map(message: tdMessage) {
+            if let message = await map(message: tdMessage) {
                 mapped.append(message)
             }
         }
@@ -314,7 +316,7 @@ public actor TDLibTelegramClient: TelegramClient {
             topicId: nil
         )
 
-        guard let message = try await map(message: sent) else {
+        guard let message = await map(message: sent) else {
             throw TelegramClientError.chatNotFound
         }
         return message
@@ -343,7 +345,7 @@ public actor TDLibTelegramClient: TelegramClient {
             replyTo: nil,
             topicId: nil
         )
-        guard let message = try await map(message: sent) else {
+        guard let message = await map(message: sent) else {
             throw TelegramClientError.chatNotFound
         }
         return message
@@ -375,7 +377,7 @@ public actor TDLibTelegramClient: TelegramClient {
             replyTo: nil,
             topicId: nil
         )
-        guard let message = try await map(message: sent) else {
+        guard let message = await map(message: sent) else {
             throw TelegramClientError.chatNotFound
         }
         return message
@@ -505,14 +507,18 @@ public actor TDLibTelegramClient: TelegramClient {
         }
     }
 
-    private func map(chat: TDLibKit.Chat) -> Chat {
-        Chat(
+    private func map(chat: TDLibKit.Chat, in chatList: TDLibKit.ChatList = .chatListMain) -> Chat {
+        let chatPosition = position(in: chat, matching: chatList)
+        return Chat(
             id: chat.id,
             title: chat.title,
             type: map(chatType: chat.type),
             lastMessageSnippet: messageSnippet(from: chat.lastMessage?.content),
             lastMessageDate: date(fromUnixTimestamp: chat.lastMessage?.date),
-            unreadCount: chat.unreadCount
+            unreadCount: chat.unreadCount,
+            isPinned: chatPosition?.isPinned ?? false,
+            isMuted: chat.notificationSettings.muteFor > 0,
+            isArchived: chat.chatLists.contains(.chatListArchive)
         )
     }
 
@@ -527,10 +533,10 @@ public actor TDLibTelegramClient: TelegramClient {
         }
     }
 
-    private func map(message tdMessage: TDLibKit.Message) async throws -> Message? {
+    private func map(message tdMessage: TDLibKit.Message) async -> Message? {
         let (text, contentType) = extractContent(from: tdMessage.content)
 
-        let senderName = try await senderName(for: tdMessage)
+        let senderName = await senderName(for: tdMessage)
         return Message(
             id: tdMessage.id,
             chatID: tdMessage.chatId,
@@ -567,23 +573,55 @@ public actor TDLibTelegramClient: TelegramClient {
         }
     }
 
-    private func senderName(for message: TDLibKit.Message) async throws -> String {
+    private func senderName(for message: TDLibKit.Message) async -> String {
         switch message.senderId {
         case .messageSenderUser(let sender):
             if let user = cachedUsers[sender.userId] {
                 return Self.displayName(firstName: user.firstName, lastName: user.lastName)
             }
-            let user = try await client.getUser(userId: sender.userId)
-            cachedUsers[user.id] = user
-            return Self.displayName(firstName: user.firstName, lastName: user.lastName)
+            do {
+                let user = try await client.getUser(userId: sender.userId)
+                cachedUsers[user.id] = user
+                return Self.displayName(firstName: user.firstName, lastName: user.lastName)
+            } catch {
+                print("⚠️ [BZGram] Failed to resolve sender user \(sender.userId): \(error)")
+                return "User \(sender.userId)"
+            }
         case .messageSenderChat(let sender):
             if let chat = cachedChats[sender.chatId] {
                 return chat.title
             }
-            let chat = try await client.getChat(chatId: sender.chatId)
-            cachedChats[chat.id] = chat
-            return chat.title
+            do {
+                let chat = try await client.getChat(chatId: sender.chatId)
+                cachedChats[chat.id] = chat
+                return chat.title
+            } catch {
+                print("⚠️ [BZGram] Failed to resolve sender chat \(sender.chatId): \(error)")
+                return "Chat \(sender.chatId)"
+            }
         }
+    }
+
+    private func fallbackLastMessage(in chatID: Int64) async -> Message? {
+        guard let chat = try? await client.getChat(chatId: chatID),
+              let lastMessage = chat.lastMessage else {
+            return nil
+        }
+        cachedChats[chat.id] = chat
+        if let fetched = try? await client.getMessage(chatId: chatID, messageId: lastMessage.id),
+           let mapped = await map(message: fetched) {
+            return mapped
+        }
+        return await map(message: lastMessage)
+    }
+
+    private func position(for chatID: Int64, in chatList: TDLibKit.ChatList) -> TDLibKit.ChatPosition? {
+        guard let chat = cachedChats[chatID] else { return nil }
+        return position(in: chat, matching: chatList)
+    }
+
+    private func position(in chat: TDLibKit.Chat, matching chatList: TDLibKit.ChatList) -> TDLibKit.ChatPosition? {
+        chat.positions.first { $0.list == chatList }
     }
 
     private func messageSnippet(from content: MessageContent?) -> String? {

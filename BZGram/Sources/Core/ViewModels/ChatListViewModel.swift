@@ -114,9 +114,15 @@ public final class ChatListViewModel: ObservableObject {
     public func selectFolder(_ folderId: Int?) async {
         guard selectedFolderId != folderId else { return }
         selectedFolderId = folderId
+        searchQuery = ""
+        selectedFilter = .all
+        showTranslatedOnly = false
+        showMutedOnly = false
+        showPinnedOnly = false
         isLoading = true
         await sessionStore.refreshChats(folderId: folderId)
         chats = sessionStore.chats
+        folders = sessionStore.folders
         isLoading = false
     }
 
